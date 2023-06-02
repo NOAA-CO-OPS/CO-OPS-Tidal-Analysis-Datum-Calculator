@@ -34,7 +34,7 @@ This function defines a low-pass Butterworth filter to preserve the tidal energy
 
 ## control_data.py
 
-This function retrieves, prepares and returns Monthly Means, High Lows, Accepted Datums of the control station (if selected) and determines the datum computation method to be used.
+This function retrieves, prepares and returns Monthly Means, High Lows, Accepted Datums of the control station (if selected) from CO-OPS' API (https://tidesandcurrents.noaa.gov/api-helper/url-generator.html) and determines the datum computation method to be used.
 
 ## tides.py
 
