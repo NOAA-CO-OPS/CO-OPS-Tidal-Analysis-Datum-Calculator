@@ -22,11 +22,11 @@ The primary code is the SDC.py file.
 
 ## SDC.py
 
-This is the main function that runs all of the following functions to calculate datums of a given water level station using the .csv file input (example station water level data included). 
+This is the main function that runs all of the following functions to calculate datums of a given water level station using a .csv file input (example station water level data included). 
 
-This function requires the user to specify the file to be used, input the latitude and longitude to define the time zone, select the data unit of the input file, and, if desired, specify the 7-digit control station ID to be used as a reference. The file and data format should follow the standards stated in the NOAA Tidal Analysis Datums Calculator User's Guide: https://access.co-ops.nos.noaa.gov/datumcalc/docs/UserGuide.pdf.
+This function looks to the config.cfg file for the user's file name, latitude and longitude to define the time zone, the data unit of the input file, and, if desired, the specified 7-digit control station ID to be used as a reference. The file and data format should follow the standards stated in the NOAA Tidal Analysis Datums Calculator User's Guide: https://access.co-ops.nos.noaa.gov/datumcalc/docs/UserGuide.pdf.
 
-The final output includes .csv files containing the High Low tides, tide plots and logfile. 
+The final output includes .csv files containing the High Low tides, tide plots image files, and a main log text file called SDC.out. 
 
 ## filter_defs.py
 
