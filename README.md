@@ -10,6 +10,8 @@ This tool computes tidal datums from any water level data time series with a con
 
 Licate LA, Huang L and Dusek G (2017) A Comparison of Datums Derived from CO-OPS Verified Data Products and Tidal Analysis Datum Calculator. NOAA Technical Report NOS CO-OPS 085. https://access.co-ops.nos.noaa.gov/datumcalc/docs/TechnicalReport.pdf
 
+For additional information, contact: Jerry Hovis, NOAA Center for Operational Oceanographic Products and Services, gerald.hovis@noaa.gov.
+
 # Configuration file (config.cfg)
 
 The online version of this tool has a GUI that allows users to select files, choose parameters and setup options. Since this is a standalone bit of code, included with the python files is a config.cfg file that can be modified in a text editor to set the required parameters for the code to run. Those parameters are: filename to be loaded, control station ID (if desired), Method, Time_Zone, ata units, your station’s latitude, your station’s longitude. 
