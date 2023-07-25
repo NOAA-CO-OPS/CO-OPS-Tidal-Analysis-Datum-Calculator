@@ -16,9 +16,9 @@ For additional information, contact: Jerry Hovis, NOAA Center for Operational Oc
 
 The online version of this tool has a GUI that allows users to select files, choose parameters and setup options. Since this is a standalone bit of code, included with the python files is a config.cfg file that can be modified in a text editor to set the required parameters for the code to run. 
 Those parameters are: 
-* filename to be loaded
-* control station ID (if desired),
-*  Method, Time_Zone, ata units, your station’s latitude, your station’s longitude. 
+- filename to be loaded
+-  control station ID (if desired),
+  Method, Time_Zone, ata units, your station’s latitude, your station’s longitude. 
 
 Typically a user would simply need to set the filename, units, time zone, lat/lon, and choose a control station (if desired). The rest of the parameters can be determined by the code. 
 
