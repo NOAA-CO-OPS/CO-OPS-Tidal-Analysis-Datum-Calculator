@@ -18,7 +18,8 @@ Typically a user would simply need to set the filename, units, time zone, lat/lo
 
 # Code Description
 
-The primary code is the SDC.py file. To run the code, open your preferred Python-enabled command prompt and enter 'python SDC.py'. 
+The primary code is the SDC.py file. To run the code, open your preferred Python-enabled command prompt and enter:  
+
 <code> python SDC.py </code>
 
 
