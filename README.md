@@ -8,7 +8,7 @@ This is code for the NOAA Tidal Analysis Datums Calculator tool.
 
 This tool computes tidal datums from any water level data time series with a consistent time step. The Tidal Analysis and Datums Calculator (TAD) uses a Butterworth digital filter to remove high frequency (> 4 cycles/day) water level variability in order to identify tidal high and low waters from observed water level data. For official datums, CO-OPS uses a procedure called Curve Fit Manual Verification (CFMV) approach to identify tidal high and low waters that requires human oversight. The accuracy of this tool relative to the CO-OPS approach is described in detail in the following technical document:
 
-Licate LA, Huang L and Dusek G (2017) A Comparison of Datums Derived from CO-OPS Verified Data Products and Tidal Analysis Datum Calculator. NOAA Technical Report NOS CO-OPS 085. https://access.co-ops.nos.noaa.gov/datumcalc/docs/TechnicalReport.pdf
+Licate LA, Huang L and Dusek G (2017) A Comparison of Datums Derived from CO-OPS Verified Data Products and Tidal Analysis Datum Calculator. [NOAA Technical Report NOS CO-OPS 085](https://access.co-ops.nos.noaa.gov/datumcalc/docs/TechnicalReport.pdf).
 
 For additional information, contact: Jerry Hovis, NOAA Center for Operational Oceanographic Products and Services, gerald.hovis@noaa.gov.
 
@@ -38,7 +38,7 @@ The primary code is the SDC.py file. To run the code, open your preferred Python
 
 This is the main function that runs all of the following functions to calculate datums of a given water level station using a .csv file input (example station water level data included). 
 
-This function looks to the config.cfg file for the user's file name, latitude and longitude to define the time zone, the data unit of the input file, and, if desired, the specified 7-digit control station ID to be used as a reference. The file and data format should follow the standards stated in the NOAA Tidal Analysis Datums Calculator User's Guide: https://access.co-ops.nos.noaa.gov/datumcalc/docs/UserGuide.pdf.
+This function looks to the config.cfg file for the user's file name, latitude and longitude to define the time zone, the data unit of the input file, and, if desired, the specified 7-digit control station ID to be used as a reference. The file and data format should follow the standards stated in the NOAA Tidal Analysis Datums Calculator [User's Guide](https://access.co-ops.nos.noaa.gov/datumcalc/docs/UserGuide.pdf).
 
 The final output includes .csv files containing the High Low tides, tide plots image files, and a main log text file called SDC.out. 
 
@@ -48,7 +48,7 @@ This function defines a low-pass Butterworth filter to preserve the tidal energy
 
 ## control_data.py
 
-This function retrieves, prepares and returns Monthly Means, High Lows, Accepted Datums of the control station (if selected) from CO-OPS' API (https://tidesandcurrents.noaa.gov/api-helper/url-generator.html) and determines the datum computation method to be used.
+This function retrieves, prepares and returns Monthly Means, High Lows, Accepted Datums of the control station (if selected) from [CO-OPS' API](https://tidesandcurrents.noaa.gov/api-helper/url-generator.html) and determines the datum computation method to be used.
 
 ## tides.py
 
