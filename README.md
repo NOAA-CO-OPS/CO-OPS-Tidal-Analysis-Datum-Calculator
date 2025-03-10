@@ -55,8 +55,8 @@ This function retrieves, prepares and returns Monthly Means, High Lows, Accepted
 This function identifies, tabulates and flags tides within the series and designates them as Lower Low, Higher Low, Lower High, or Higher High.  Tide picking algorithms for both semi-diurnal and diurnal tide signals are used and depend on the nature of the time series. 
 
 For additional information, contact:
-Jerry Hovis (Gerald.Hovis@noaa.gov),
-NOAA Center for Operational Oceanographic Products and Services
+NOAA's [Center for Operational Oceanographic Products and Services](https://tidesandcurrents.noaa.gov/)
+    User Services: tide.predictions@noaa.gov
 
 ## Example.csv
 
