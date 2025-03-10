@@ -10,7 +10,8 @@ This tool computes tidal datums from any water level data time series with a con
 
 Licate LA, Huang L and Dusek G (2017) A Comparison of Datums Derived from CO-OPS Verified Data Products and Tidal Analysis Datum Calculator. [NOAA Technical Report NOS CO-OPS 085](https://access.co-ops.nos.noaa.gov/datumcalc/docs/TechnicalReport.pdf).
 
-For additional information, contact: Jerry Hovis, NOAA Center for Operational Oceanographic Products and Services, gerald.hovis@noaa.gov.
+For additional information, contact: NOAA's [Center for Operational Oceanographic Products and Services](https://tidesandcurrents.noaa.gov/)
+    User Services: tide.predictions@noaa.gov
 
 # Configuration file (config.cfg)
 
@@ -53,10 +54,6 @@ This function retrieves, prepares and returns Monthly Means, High Lows, Accepted
 ## tides.py
 
 This function identifies, tabulates and flags tides within the series and designates them as Lower Low, Higher Low, Lower High, or Higher High.  Tide picking algorithms for both semi-diurnal and diurnal tide signals are used and depend on the nature of the time series. 
-
-For additional information, contact:
-NOAA's [Center for Operational Oceanographic Products and Services](https://tidesandcurrents.noaa.gov/)
-    User Services: tide.predictions@noaa.gov
 
 ## Example.csv
 
