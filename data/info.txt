@@ -1,0 +1,27 @@
+Description of the test datasets:
+- test_timeseries_simple.csv : This is a timeseries from the closest CORA node to the Fernandina Hohonu gauge.
+							   It is a 31 day timeseres for October 2022 at hourly spacing. The timeseries is
+							   continuous, uniformly spaced, and contains a strong tidal signal without noise.
+
+- test_timeseries_uneventimesampling.csv: This is a timeseries from an RA station provided by Paul Fanelli. The timestamps 
+										  in the timeseries are not uniformly spaced
+										  and this causes the public version of TADC to error. 
+										  The timeseries is about 4 months long at approx 6-minute spacing.
+											
+- test_timeseries_smallsignal_flatline.csv: This is a timeseries from the closest CORA node to the Topsail Beach Hohonu gauge.
+											It is a 31 day timeseres for October 2022 at hourly spacing. The timeseries contains
+											a very small amplitude tidal signal (~20 cm) superimposed on a storm driven signal,
+											and also contains a multi-day flatline (not NaNs).
+											
+- test_timeseries_onlyhighs.csv: This is a timeseries from the closest CORA node to the Philadelphia NWLON station. 
+								 It is a 31 day timeseres for October 2022 at hourly spacing. The timeseries is NaN
+								 except around each high tide.
+								 
+- test_timeseries_biggap.csv: This is the same timeseries as test_timeseries_simple.csv, but values at indices 400:600 (200 hr) have
+							  been replaced with NaNs.
+							  
+- test_timeseries_nontidal_spikes.csv: This is a CORA timeseries from node number 106 rom the Delaware.netcdf shoreline file.
+									   It is only ~6 months of the timeseries, at hourly spacing. The timeseries has no 
+									   disernible tidal signal, though has a few very large (>10 sigma from the mean) spikes, 
+									   likely representing storms.
+											

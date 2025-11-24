@@ -1,0 +1,10 @@
+name: tadc
+channels:
+    - defaults
+dependencies:
+    - python>=3.0
+    - matplotlib
+    - numpy
+    - pandas
+    - requests
+    - scipy

@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tadc"
+version = "2.0.0"
+description = "The Tidal Analysis Datum Calculator (TADC) computes tidal datums from a water level data time series."
+readme = "README.md"
+authors = [
+  { name="Center for Operational Oceanographic Products and Services, National Ocean Service, National Oceanic and Atmsopheric Administration", email="tide.predictions@noaa.gov" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.0"
+dependencies = [
+    # "matplotlib",
+	# "numpy",
+	# "pandas",
+	# "requests",
+	# "scipy"
+]
+license-files = ["LICENSE.txt"]
+
+[project.urls]
+"Online Web App" = "https://access.co-ops.nos.noaa.gov/datumcalc/"
+"Technical Report" = "https://access.co-ops.nos.noaa.gov/datumcalc/docs/TechnicalReport.pdf"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tadc*"]
+namespaces = false
