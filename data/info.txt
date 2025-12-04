@@ -24,4 +24,9 @@ Description of the test datasets:
 									   It is only ~6 months of the timeseries, at hourly spacing. The timeseries has no 
 									   disernible tidal signal, though has a few very large (>10 sigma from the mean) spikes, 
 									   likely representing storms.
+									   
+- test_timeseries_unreadablevalues.csv: This is a partner station timeseries from Peterson Key FL. It is about 8 months at 6-minute spacing.
+										Timestamps are in ISO8601 format. The timeseries contains a few missing values that are labeled as 
+										#VALUE!
+
 											

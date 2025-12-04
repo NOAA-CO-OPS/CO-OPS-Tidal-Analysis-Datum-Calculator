@@ -9,9 +9,20 @@ class Assurances:
     def __init__(self, ts):
         self.ts = ts
         
-    def assure_even_temporal_spacing(self):
+    def assure_no_unreadable_values(self):
         ts = self.ts.rename(columns={self.ts.columns[0]:'time',self.ts.columns[1]:'val'})
-        ts['time'] = pd.to_datetime(ts['time'])
+        try:
+            ts['val'].astype(float)
+        except Exception as error:
+            bad_val = error.args[0].split(':')[1].replace(' ','').replace("'","")
+            ts.loc[ts['val']==bad_val,'val'] = 'NaN'
+            ts['val'] = ts['val'].astype(float)
+            warnings.warn('Unreadable value found in data: ' + bad_val + '. Replacing all occurrences with NaNs.')            
+        self.ts = ts
+        
+    def assure_even_temporal_spacing(self):       
+        ts = self.ts
+        ts['time'] = pd.to_datetime(ts['time'])         
         ts = ts.groupby('time').first().reset_index()  # Remove duplicates #
         time_diffs_all = ts['time'].diff()
         if len(time_diffs_all.unique().dropna()) > 1:
@@ -35,6 +46,7 @@ class Assurances:
         
 def run(ts):
     assurances = Assurances(ts)
+    assurances.assure_no_unreadable_values()
     assurances.assure_even_temporal_spacing()
     assurances.assure_flatlines_are_gaps()
     return assurances.ts

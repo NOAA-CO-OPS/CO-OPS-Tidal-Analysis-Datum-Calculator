@@ -84,3 +84,17 @@ def test_nontidal_with_spikes_timeseries():
     except (ValueError, RuntimeError):
         broke = True
     assert broke is False , "TADC broke"
+
+
+def test_unreadable_values_timeseries():
+    fname = 'data/test_timeseries_unreadablevalues.csv'
+    lat = 32.78
+    lon = -79.92
+    broke = False
+    try:
+        out = tadc.run(fname=fname, Subordinate_Lat=lat, Subordinate_Lon=lon)
+        assert '***Error***' not in out.readme, "TADC failed silently"
+    except (ValueError, RuntimeError):
+        broke = True
+    assert broke is False , "TADC broke"
+    
