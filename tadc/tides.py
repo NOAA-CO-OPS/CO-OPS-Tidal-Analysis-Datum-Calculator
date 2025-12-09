@@ -1,8 +1,9 @@
 """Tide analysis functions for CO-OPS Datums Calculator"""
 
 from datetime import datetime, date, time, timedelta
+import logging
 import numpy as np
-import warnings
+logger = logging.getLogger(__name__)
 
 
 def first_last_in_month(dates, month, year):
@@ -60,7 +61,7 @@ def Check_Tide_Order(dt, h, l):
     ttype = tide_types[0]
     for i in range(1,len(tides)-1):
         if tide_types[i] == ttype:
-            warnings.warn('Tides are out of order at:', dt[tides[i]])
+            logger.warning('Tides are out of order at:', dt[tides[i]])
             return -1
         ttype = tide_types[i]
         i = i+1
@@ -256,10 +257,8 @@ def Check_Tides(dt, wl, h, l, Units_Factor):
         if(((dt[tides[t2]] - dt[tides[t1]]) < timedelta(hours=2)) and (tide_types[t1] == tide_types[t2])):
             #check if time differnce is less than threshold and if tide types are the same, delete second tide 
             if tide_types[t2] == "H":
-                warnings.warn('Deleting tide at ', dt[h[tide_indexes[t2]]], ' for min time')
                 hi_mask[tide_indexes[t2]] = False
             else:
-                warnings.warn('Deleting tide at ', dt[l[tide_indexes[t2]]], ' for min time')
                 lo_mask[tide_indexes[t2]] = False
             t2=t2+1
             aredeletedtides = 1
@@ -267,10 +266,8 @@ def Check_Tides(dt, wl, h, l, Units_Factor):
                    (tide_types[t1] != tide_types[t2]):
             #check if tide height/time difference is less than threshold and if tide type is not the same, delete both tides 
             if tide_types[t1] == "H":
-                warnings.warn(' Deleting 2 tides at {0:s} for min time/range.'.format(str(dt[h[tide_indexes[t1]]])))
                 hi_mask[tide_indexes[t1]] = False
             else:
-                warnings.warn(' Deleting 2 tides at {0:s} for min time/range.'.format(str(dt[l[tide_indexes[t1]]])))
                 lo_mask[tide_indexes[t1]] = False
             if tide_types[t2] == "H":
                 hi_mask[tide_indexes[t2]] = False
@@ -420,22 +417,22 @@ def Calc_Expected_Diff(HL_Sub, HL_Con):
         MeanHDiffAbove = MeanHDiffAbove / NHighsAbove
 
     if NLowsAbove ==0:
-        warnings.warn('Error. No Lows above mean.')
+        logger.warning('Error. No Lows above mean.')
     else:
         MeanLDiffAbove = MeanLDiffAbove / NLowsAbove
 
     if NHighsBelow == 0:
-        warnings.warn('Error. No Highs below mean.')
+        logger.warning('Error. No Highs below mean.')
     else:
         MeanHDiffBelow = MeanHDiffBelow / NHighsBelow
 
     if NLowsBelow == 0:
-        warnings.warn('Error. No Lows below mean.')
+        logger.warning('Error. No Lows below mean.')
     else:
         MeanLDiffBelow = MeanLDiffBelow / NLowsBelow
 
     if NHighsAbove == 0 or NLowsAbove == 0 or NHighsBelow == 0 or NLowsBelow == 0:
-        warnings.warn('***Error*** Fatal issue. Exiting Analysis.')
+        logger.warning('***Error*** Fatal issue. Exiting Analysis.')
         exit(-1)
 
     if NHighsAbove > NHighsBelow:

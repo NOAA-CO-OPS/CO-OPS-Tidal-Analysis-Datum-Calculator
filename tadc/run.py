@@ -12,6 +12,7 @@ import argparse
 import configparser
 from datetime import datetime, date, time, timedelta
 from dateutil.parser import parse
+import logging
 import matplotlib
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -23,6 +24,7 @@ from scipy.signal import butter, filtfilt
 import sys
 from time import gmtime, strftime
 import warnings
+logger = logging.getLogger(__name__)
 
 from . import control_data as cd
 from . import daily_max_analysis as dma
@@ -156,7 +158,7 @@ class Out:
         return out_dma
 
 
-def run(*, fname=None, data=None, Pick_Method='PolyFit', Control_Station_ID=None, Method_Option='AUTO',
+def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', Control_Station_ID=None, Method_Option='AUTO',
          Time_Zone='GMT', Units='Meters', Subordinate_Lat=None, Subordinate_Lon=None, outfile_save_dir='None', make_plots=False):
 
     #Init the output readme
@@ -189,11 +191,11 @@ def run(*, fname=None, data=None, Pick_Method='PolyFit', Control_Station_ID=None
         else:
             path = ''
         OutFile = SDC_Print(['Using ', fname[end_of_path+1:]], OutFile)
-        ts_qa = qa.run(pd.read_csv(fname))
+        ts_qa = qa.run(pd.read_csv(fname), resample_minutes)
         qc.run(ts_qa, Control_Station_ID, Subordinate_Lat, Subordinate_Lon)      
     else:
         OutFile = SDC_Print(['Using user input timeseries'], OutFile)
-        ts_qa = qa.run(data)
+        ts_qa = qa.run(data, resample_minutes)
         qc.run(ts_qa, Control_Station_ID, Subordinate_Lat, Subordinate_Lon)
         
     #Get time offset if subordinate is not gmt
@@ -261,7 +263,7 @@ def run(*, fname=None, data=None, Pick_Method='PolyFit', Control_Station_ID=None
         OutFile = SDC_Print(['Dataset trimmed to longest continuous segment.'], OutFile)
         OutFile = SDC_Print(['New Start:', x[0]], OutFile)
         OutFile = SDC_Print(['New End:  ', x[len(x)-1]], OutFile)
-        warnings.warn(('Dataset trimmed to longest continuous segment with gaps <= 3 hours: ' + datetime.strftime(x[0],'%Y-%m-%d %H:%M') +
+        logger.warning(('WARNING: Dataset trimmed to longest continuous segment with gaps <= 3 hours: ' + datetime.strftime(x[0],'%Y-%m-%d %H:%M') +
                        ' - ' + datetime.strftime(x[-1],'%Y-%m-%d %H:%M')))
 
     if (x[len(x)-1] - x[0]) < timedelta(days=14):
@@ -687,6 +689,9 @@ def run(*, fname=None, data=None, Pick_Method='PolyFit', Control_Station_ID=None
                     if high_values[i] > Mon_HWL:
                         Mon_HWL = high_values[i]
 
+            if nhhighs == 0 and nhighs == 0:
+                raise RuntimeError('Input data do not have a strong enough tidal signal for reliable tidal analysis')
+            
             MHHW = MHHW / nhhighs
             MHW  = MHW  / nhighs
 
@@ -1269,6 +1274,10 @@ if __name__ == '__main__':
                         type=pd.core.frame.DataFrame,
                         default=None,
                         help='The timeseries data to be analyzed as a Pandas DataFrame object.')    
+    parser.add_argument('--resample_minutes',
+                        type=int,
+                        default=None,
+                        help="Resample the input data to this sampling rate (in minutes) (Default: None - do not resample unless needed)")
     parser.add_argument('--Pick_Method',
                         type=str,
                         default='PolyFit',
@@ -1338,6 +1347,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     out = run(fname=args.fname,
+              resample_minutes=args.resample_minutes,
               Pick_Method=args.Pick_Method,
               Control_Station_ID=args.Control_Station_ID,
               Method_Option=args.Method_Option,

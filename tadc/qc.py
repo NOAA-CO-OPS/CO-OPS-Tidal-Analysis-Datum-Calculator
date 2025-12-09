@@ -1,9 +1,10 @@
 import datetime
+import logging
 import numpy as np
 import pandas as pd
 import requests
 from scipy.signal import periodogram
-import warnings
+logger = logging.getLogger(__name__)
 
 
 class Tests:
@@ -32,18 +33,7 @@ class Tests:
             lon_control = r.json()['stations'][0]['lng']
             d = self._haversine(self.subordinate_lat,self.subordinate_lon,lat_control,lon_control)
             if d > 10:
-                warnings.warn('Control station is ' + str(round(d,2)) + ' km from subordinate station.')
-
-    def check_rough_tidal_amplitude(self):
-        fs = 1/self.ts['time'].diff()[1].seconds  # Sampling frequency #
-        y_demean = self.ts['val'] - self.ts['val'].mean()  # De-mean the timeseries #
-        y_demean[y_demean.isna()] = 0
-        f, Pxx = periodogram(y_demean,fs)  # Get the PSD curve. Units are m^2/HZ #
-        cpd = f*60*60*24  # Convert from HZ to cycles per day #
-        var = np.trapz(Pxx, x=cpd)/60/60/24  # Total variance is the integral under the PSD curve assuming the input data is demeaned #
-        var48 = np.trapz(Pxx[cpd<=2], x=cpd[cpd<=2])/60/60/24  # Variance at periods less than or equal to 2 days #
-        if var48 < 0.02 or var48/var < 0.75:  # These are thresholds that seem to be reasonable - may need tweaking.
-            raise RuntimeError('Input data do not appear to have a strong enough tidal signal for reliable analysis.')
+                logger.warn('WARNING: Control station is ' + str(round(d,2)) + ' km from subordinate station.')
 
     @staticmethod
     def _haversine(lat1, lon1, lat2, lon2):
@@ -62,4 +52,3 @@ def run(ts, control_station_id, subordinate_lat, subordinate_lon):
     tests.check_csv_format()
     tests.check_date_format()
     tests.check_control_station_distance()
-    tests.check_rough_tidal_amplitude()
