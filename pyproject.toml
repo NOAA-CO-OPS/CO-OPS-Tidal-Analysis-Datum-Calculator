@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tadc"
-version = "2.0.0"
+version = "2.2.0"
 description = "The Tidal Analysis Datum Calculator (TADC) computes tidal datums from a water level data time series."
 readme = "README.md"
 authors = [
