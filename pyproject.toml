@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tadc"
-version = "2.2.0"
+version = "2.2.1"
 description = "The Tidal Analysis Datum Calculator (TADC) computes tidal datums from a water level data time series."
 readme = "README.md"
 authors = [
@@ -16,11 +16,12 @@ classifiers = [
 ]
 requires-python = ">=3.0"
 dependencies = [
-    # "matplotlib",
-	# "numpy",
-	# "pandas",
-	# "requests",
-	# "scipy"
+    "matplotlib",
+	"numpy",
+	"pandas>=2.0.3",
+	"python-dateutil",
+	"requests",
+	"scipy"
 ]
 license-files = ["LICENSE.txt"]
 

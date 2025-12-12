@@ -5,6 +5,7 @@ dependencies:
     - python>=3.0
     - matplotlib
     - numpy
-    - pandas
+    - pandas>=2.0.3
+    - python-dateutil
     - requests
     - scipy
