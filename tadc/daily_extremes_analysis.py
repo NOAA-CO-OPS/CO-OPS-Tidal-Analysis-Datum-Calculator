@@ -4,17 +4,21 @@ import pandas as pd
 
 
 class Out:
-    def __init__(self, daily_maxs):
-        self.daily_maxs = daily_maxs
-
+    def __init__(self, daily_extremes, extremes_type):
+        self.__daily_extremes = daily_extremes
+        if extremes_type == 'max':
+            self.daily_maxs = daily_extremes
+        elif extremes_type == 'min':
+            self.daily_mins = daily_extremes
+            
     def percentile(self, prctile):
-        return self.daily_maxs['elevation'].quantile(prctile/100)
+        return self.__daily_extremes['elevation'].quantile(prctile/100)
 
     def plot(self, prctile=None):
         fig,ax = plt.subplots(1,figsize=(9,5))
         ax.tick_params(axis='both',labelsize=8)
         ax.grid('on',linestyle='--')
-        ax.plot(self.daily_maxs['time'],self.daily_maxs['elevation'],'-o',label='Daily max',zorder=2)
+        ax.plot(self.__daily_extremes['time'],self.__daily_extremes['elevation'],'-o',label='Daily max',zorder=2)
         ax.set_ylabel('Elevation (m)',fontsize=8)
         if prctile != None:
             prctile_elev = self.percentile(prctile)
@@ -24,8 +28,8 @@ class Out:
         fig.show()
         return fig
 
-        
-def run(datum, data, datums):
+       
+def run(extremes_type, datum, data, datums):
     # Get timestamps into a usable format #
     data = data.rename(columns={data.columns[0]:'time',data.columns[1]:'val'})
     data['time'] = pd.to_datetime(data['time'])
@@ -39,9 +43,12 @@ def run(datum, data, datums):
     interval_hrs = (data_dwant.index[1] - data_dwant.index[0]).seconds/3600
     n = data_dwant.groupby(data_dwant.index.date)['val'].size()
     per_complete = n / (24 / interval_hrs) * 100
-    dmi = data_dwant.groupby(data_dwant.index.date)['val'].idxmax()
+    if extremes_type == 'max':
+        dmi = data_dwant.groupby(data_dwant.index.date)['val'].idxmax()
+    elif extremes_type == 'min':
+        dmi = data_dwant.groupby(data_dwant.index.date)['val'].idxmin()
     dm = data_dwant.loc[dmi].reset_index()
     dm = dm.rename(columns={'time':'time','val':'elevation'})
     dm['completeness'] = per_complete.values
 
-    return Out(dm)
+    return Out(dm, extremes_type)

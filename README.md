@@ -54,30 +54,36 @@ out = tadc.run(data=timeseries, Subordinate_Lat=37.8, Subordinate_Lon=-79.6)
 > [!NOTE]
 > One and only one of either `fname` or `data` must be specified when running `tadc()`
 
+The object returned by `tadc.run()` also supports some further analyses on the data, in particular `daily_max_analysis`, `daily_min_analysis`, and `inundation_analysis`:
+```Python
+out = tadc.run(data=timeseries, Subordinate_Lat=37.8, Subordinate_Lon=-79.6)
+daily_max_obj = out.daily_max_analysis(datum='MHHW')  # Do an analysis of daily maximums on MHHW #
+daily_maxs = daily_max_obj.daily_maxs  # returns the daily max timeseries #
+daily_max_obj.plot()  # creates a timeseries plot of the daily maxs #
+daily_min_obj = out.daily_min_analysis(datum='MHHW')  # Do an analysis of daily minimums on MHHW #
+# daily_min_obj has the same sub-methods as daily_max_obj #
+inundation_analysis_obj = out.inundation_analysis(threshold=0.5, threshold_datum='MHHW') # Do an analysis of inundations above MHHW+0.5 m #
+inundation_analysis_obj.inundations()  # returns the intervals of threshold exceedance #
+inundation_analysis_obj.plot()  # creates a plot of inundation time vs. depth #
+```
 
-# Detailed Description of Modules
+# Parameters:
+Whether running from the command line or in Python, the following input arguments can be passed:
 
-## run.py
-
-This is the main module that imports all of the following modules to calculate datums of a given water level station using a .csv file input (example station water level data included) or data as a Pandas DataFrame. 
-
-The file and data format should follow the standards stated in the NOAA Tidal Analysis Datums Calculator [User's Guide](https://access.co-ops.nos.noaa.gov/datumcalc/docs/UserGuide.pdf).
-
-## qa.py and qc.py
-
-These module defines some basic QA/QC assurances/checks for the input data. If a check is failed, a known `Error` will be generated.
-
-## filter_defs.py
-
-This module defines a low-pass Butterworth filter to preserve the tidal energy and remove the meteorological effects of the water level.
-
-## control_data.py
-
-This module retrieves, prepares and returns Monthly Means, High Lows, Accepted Datums of the control station (if selected) from [CO-OPS' API](https://tidesandcurrents.noaa.gov/api-helper/url-generator.html) and determines the datum computation method to be used.
-
-## tides.py
-
-This module identifies, tabulates and flags tides within the series and designates them as Lower Low, Higher Low, Lower High, or Higher High.  Tide picking algorithms for both semi-diurnal and diurnal tide signals are used and depend on the nature of the time series. 
+| Argument &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Type &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--fname` | `file path` | `None` | Required unless `--data` is specified.<br>The full path of the timeseries data to be analyzed.
+| `--data` | `pandas DataFrame` | `None` | Required unless `--fname` is specified.<br>The timeseries data to be analyzed as a Pandas DataFrame object. Only used in Python workflows.
+| `--Subordinate_Lat` | `float` | `None` | The latitude (in decimal degrees) of the station for which datums are being computed.
+| `--Subordinate_Lon` | `float` | `None` | The longitude (in decimal degrees) of the station for which datums are being computed.
+| `--Units` | {`'Meters'`,<br>`'Centimeters'`,<br>`'Feet'`,<br>`'Inches'`} | `'Meters'` | The units of the input data. All calculations will be done on these units.<br>**Warning** Must match the units of the input data.
+| `--Time_Zone` | `str` | `'GMT'` | The time zone of the input data. All calculations will be done in this timezone.<br>**Warning** Must match the time zone of the input data.
+| `--resample_minutes` | `int` | `None` | Resample the input data to this sampling rate (in minutes).<br> **Note** If your data are unevenly spaced in time, resampling will be done automatically at a detected interval which can be modified by setting this parameter.
+| `--Control_Station_ID` | `int` | `None` | The seven-digit station ID of the NWLON control station being used, if using a control station.
+| `--Method_Option` | {`'AUTO'`,<br>`'FRED'`,<br>`'TBYT'`,<br>`'MMSC'`} | `'AUTO'` | The datum adjustment method to use when using a control station.<br>`'AUTO'`: Auto select. If using a control station and <1 month of data 'TBYT' will be used, 'MMSC' otherwise. If not using a control station 'FRED' will be used.<br>`'FRED'`: First reduction method. No adjustment from control station, simple average of highs and lows.<br>`'TBYT'`: Tide by tide analysis. Compares simultaneous high/low waters at the input and control stations.<br>`'MMSC'`: Monthly means simultaneous comparison. Compares monthly means at the input and control stations.
+| `--Pick_Method` | {`'PolyFit'`,<br>`'Direct'`} | `'PolyFit'` | The method to pick high and low tide times and values.<br>`'PolyFit'`: Fit a polynomial to the observations and extract highs and lows from the fit.<br>`'Direct'`: Extract highs and lows directly from the input timeseries.
+| `--outfile_save_dir` | `directory path` | `None` | The directory into which to save output files, if run from the command line. No effect if run in a Python workflow.<br>**Note** A timestamped folder will be created containing the output files.
+| `--make_plots` | `bool` | `False` | Whether or not to create plots, one per month, showing the extracted high and low tides.<br>**Warning** To save plots when running from the command line, `--outfile_save_dir` must also be specified. If running in a Python workflow, plots will be created as Python objects.
 
 
 # NOAA Open Source Disclaimer

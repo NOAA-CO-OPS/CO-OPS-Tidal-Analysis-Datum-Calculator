@@ -76,7 +76,10 @@ def Get_Accepted_Datums(Station_ID, Conversion):
         except IndexError:
             SD.append(np.nan)
         else:
-            SD.append(val)
+            if datum not in ['LWI','HWI']:
+                SD.append(val * Conversion)
+            else:
+                SD.append(val)
     return SD
 
 

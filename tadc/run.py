@@ -27,7 +27,7 @@ import warnings
 logger = logging.getLogger(__name__)
 
 from . import control_data as cd
-from . import daily_max_analysis as dma
+from . import daily_extremes_analysis as dea
 from . import filter_defs as fd
 from . import inundation_analysis as ia
 from . import qa
@@ -154,9 +154,13 @@ class Out:
         return out_ia
 
     def daily_max_analysis(self, datum):
-        out_dma = dma.run(datum, self.data, self.datums)
-        return out_dma
+        out_dmax = dea.run('max', datum, self.data, self.datums)
+        return out_dmax
 
+    def daily_min_analysis(self, datum):
+        out_dmin = dea.run('min', datum, self.data, self.datums)
+        return out_dmin
+    
 
 def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', Control_Station_ID=None, Method_Option='AUTO',
          Time_Zone='GMT', Units='Meters', Subordinate_Lat=None, Subordinate_Lon=None, outfile_save_dir='None', make_plots=False):
@@ -580,6 +584,7 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
         OutFile = SDC_Print([' '], OutFile)
 
         datums = {'HWL':HWL,
+                  'HWL_time':HWL_DT,
                   'MHHW':MHHW,
                   'MHW':MHW,
                   'DTL':0.5 * (MHHW + MLLW),
@@ -591,7 +596,8 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
                   'DLQ':MLW - MLLW,
                   'MN':MHW - MLW,
                   'GT':MHHW - MLLW,
-                  'LWL':LWL}
+                  'LWL':LWL,
+                  'LWL_time':LWL_DT}
 
     if Calc_Method == 'MMSC' or Calc_Method == 'TBYT':
     #Get Accepted Datums for Control Station
@@ -927,6 +933,7 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
             OutFile = SDC_Print(['LWL  = ', fmt % LWL, '  (' + LWL_DT.strftime("%Y/%m/%d %H:%M") + ')'], OutFile)
 
             datums = {'HWL':HWL,
+                      'HWL_time':HWL_DT,
                       'MHHW':Subordinate_MHHW,
                       'MHW':Subordinate_MHW,
                       'DTL':Subordinate_DTL,
@@ -938,7 +945,8 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
                       'DLQ':Subordinate_MLW - Subordinate_MLLW,
                       'MN':Subordinate_MN,
                       'GT':Subordinate_GT,
-                      'LWL':LWL}
+                      'LWL':LWL,
+                      'LWL_time':LWL_DT}
 
      
         if Sub_Method == 'Standard':
@@ -964,6 +972,7 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
             OutFile = SDC_Print(['LWL  = ', fmt % LWL, '  (' + LWL_DT.strftime("%Y/%m/%d %H:%M") + ')'], OutFile)
 
             datums = {'HWL':HWL,
+                      'HWL_time':HWL_DT,
                       'MHHW':Subordinate_MHHW,
                       'MHW':Subordinate_MHW,
                       'DTL':Subordinate_DTL,
@@ -975,7 +984,8 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
                       'DLQ':Subordinate_MLW - Subordinate_MLLW,
                       'MN':Subordinate_MN,
                       'GT':Subordinate_GT,
-                      'LWL':LWL}
+                      'LWL':LWL,
+                      'LWL_time':LWL_DT}
 
         if Sub_Method == 'Direct':
         # Datums with Direct Method
@@ -995,6 +1005,7 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
             OutFile = SDC_Print(['LWL  = ', fmt % LWL, '  (' + LWL_DT.strftime("%Y/%m/%d %H:%M") + ')'], OutFile)
 
             datums = {'HWL':HWL,
+                      'HWL_time':HWL_DT,
                       'MHHW':Direct_MHHW,
                       'MHW':Direct_MHW,
                       'DTL':0.5 * (Direct_MHHW + Direct_MLLW),
@@ -1006,7 +1017,8 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
                       'DLQ':Direct_MLW - Direct_MLLW,
                       'MN':Direct_MHW - Direct_MLW,
                       'GT':Direct_MHHW - Direct_MLLW,
-                      'LWL':LWL}
+                      'LWL':LWL,
+                      'LWL_time':LWL_DT}
 
 
     if Calc_Method == 'TBYT':
@@ -1172,6 +1184,7 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
             OutFile = SDC_Print(['LWL  = ', fmt % LWL, '  (' + LWL_DT.strftime("%Y/%m/%d %H:%M") + ')'], OutFile)
 
             datums = {'HWL':HWL,
+                      'HWL_time':HWL_DT,
                       'MHHW':MHHW,
                       'MHW':MHW,
                       'DTL':DTL,
@@ -1183,7 +1196,8 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
                       'DLQ':MLW - MLLW,
                       'MN':MN,
                       'GT':GT,
-                      'LWL':LWL}
+                      'LWL':LWL,
+                      'LWL_time':LWL_DT}
 
         if Sub_Method == 'Standard':
             #Standard Method is selected, calculate subordinate station datums as follows  
@@ -1207,6 +1221,7 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
             OutFile = SDC_Print(['LWL  = ', fmt % LWL, '  (' + LWL_DT.strftime("%Y/%m/%d %H:%M") + ')'], OutFile)
 
             datums = {'HWL':HWL,
+                      'HWL_time':HWL_DT,
                       'MHHW':MHHW,
                       'MHW':MHW,
                       'DTL':DTL,
@@ -1218,7 +1233,8 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
                       'DLQ':MLW - MLLW,
                       'MN':MN,
                       'GT':GT,
-                      'LWL':LWL}
+                      'LWL':LWL,
+                      'LWL_time':LWL_DT}
 
         if Sub_Method == 'Direct':
             #Direct Method is selected, calculate subordinate station datums as follows 
@@ -1242,6 +1258,7 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
             OutFile = SDC_Print(['LWL  = ', fmt % LWL, '  (' + LWL_DT.strftime("%Y/%m/%d %H:%M") + ')'], OutFile)
 
             datums = {'HWL':HWL,
+                      'HWL_time':HWL_DT,
                       'MHHW':MHHW,
                       'MHW':MHW,
                       'DTL':DTL,
@@ -1253,7 +1270,8 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
                       'DLQ':MLW - MLLW,
                       'MN':MN,
                       'GT':GT,
-                      'LWL':LWL}
+                      'LWL':LWL,
+                      'LWL_time':LWL_DT}
 
     OutFile = SDC_Print(['\n', Units], OutFile)
     OutFile = SDC_Print(['\nThat is all.'], OutFile)
