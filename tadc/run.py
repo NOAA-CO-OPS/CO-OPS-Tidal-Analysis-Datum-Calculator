@@ -140,7 +140,7 @@ def check_required_inputs(fname, data):
 
 
 class Out:
-    def __init__(self, data, readme, plots, high_lows, subordinate_monthly_means, datums):
+    def __init__(self, data, readme, plots, high_lows, subordinate_monthly_means, datums, units):
         self.data = data
         self.readme = readme
         self.plots = plots
@@ -148,17 +148,18 @@ class Out:
         self.subordinate_monthly_means = subordinate_monthly_means
         self.datums = datums
         self.datums = {key: float(value) if isinstance(value, np.float64) else value for key, value in self.datums.items()}
+        self.units = units
 
     def inundation_analysis(self, threshold, threshold_datum):
-        out_ia = ia.run(threshold, threshold_datum, self.data, self.datums, self.high_lows)
+        out_ia = ia.run(threshold, threshold_datum, self.data, self.datums, self.high_lows, self.units)
         return out_ia
 
     def daily_max_analysis(self, datum):
-        out_dmax = dea.run('max', datum, self.data, self.datums)
+        out_dmax = dea.run('max', datum, self.data, self.datums, self.units)
         return out_dmax
 
     def daily_min_analysis(self, datum):
-        out_dmin = dea.run('min', datum, self.data, self.datums)
+        out_dmin = dea.run('min', datum, self.data, self.datums, self.units)
         return out_dmin
     
 
@@ -488,17 +489,21 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
 
         if make_plots:
             fig,ax = plt.subplots(1)
-            ax.plot(x[p1:p2], y[p1:p2], 'b-', label='Water Level')
-            ax.plot(MHHTimes, MHHighs, label = 'Higher Highs', marker='D', markersize=3, linestyle='None', color='r')
-            ax.plot(MHTimes, MHighs, label = 'Highs', marker='o', markersize=3, linestyle='None', color='m')
-            ax.plot(MLLTimes, MLLows, label = 'Lower Lows', marker='D', markersize=3, linestyle='None', color='r')
-            ax.plot(MLTimes, MLows, label = 'Lows', marker='o', markersize=3, linestyle='None', color='m')
+            ax.plot(x[p1:p2], y[p1:p2], 'b-', label='Observed Water Level')
+            ax.plot(MHHTimes, MHHighs, label = 'Higher Highs/Lower Lows', marker='D', markersize=3, linestyle='None', color='r')
+            ax.plot(MHTimes, MHighs, label = 'Highs/Lows', marker='o', markersize=3, linestyle='None', color='m')
+            ax.plot(MLLTimes, MLLows, marker='D', markersize=3, linestyle='None', color='r')
+            ax.plot(MLTimes, MLows, marker='o', markersize=3, linestyle='None', color='m')
 
-            ax.set_ylabel(Units)
+            ax.set_ylabel(Units,fontsize=8)
             ax.grid('on')
+            ax.legend(fontsize=8)
 
             majorLocator = matplotlib.ticker.MultipleLocator(5)
             minorLocator = matplotlib.ticker.MultipleLocator(1)
+            yrmo = datetime(yr,mn,1).strftime('%B %Y')
+            ax.set_title('Observed Water Level and High/Low Tide Picks for ' + yrmo,fontsize=8)
+            ax.tick_params(axis='both',labelsize=8)
             xax = ax.get_xaxis() 
             xax.set_major_locator(majorLocator)
             #format major xtick label
@@ -1277,7 +1282,7 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
     OutFile = SDC_Print(['\nThat is all.'], OutFile)
     
     
-    out = Out(pd.DataFrame({'time':x,'val':y}), OutFile, out_plots, high_lows, subordinate_monthly_means, datums)
+    out = Out(pd.DataFrame({'time':x,'val':y}), OutFile, out_plots, high_lows, subordinate_monthly_means, datums, Units)
         
     return out
 
