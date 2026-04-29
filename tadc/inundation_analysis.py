@@ -1,5 +1,6 @@
 from datetime import datetime
-import matplotlib.pyplot as plt   
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
 
@@ -21,6 +22,14 @@ class Out:
         ax.plot(self.inundations['Period Start'],np.tile(self.__fun_inps['threshold'],len(self.inundations)),'ks',markerfacecolor='r',zorder=2,label='Threshold crossing')
         ax.plot(self.inundations['Period End'],np.tile(self.__fun_inps['threshold'],len(self.inundations)),'ks',markerfacecolor='r',zorder=2)
         ax.legend(fontsize=8)
+        total_dt = self.__fun_inps['data']['time'].iloc[-1] - self.__fun_inps['data']['time'].iloc[0]
+        ticks = pd.date_range(self.__fun_inps['data']['time'].iloc[0],
+                              self.__fun_inps['data']['time'].iloc[-1],
+                              freq=total_dt/8)
+        ax.set_xlim(self.__fun_inps['data']['time'].iloc[0] - (total_dt/8/4),
+                    self.__fun_inps['data']['time'].iloc[-1] + (total_dt/8/4))
+        ax.set_xticks(ticks)
+        fig_picks.autofmt_xdate()
         ax.set_title(('Inundation History\n' + 
               'Threshold = ' + str(self.__fun_inps['threshold']) + ' '+self.units+' above ' + self.__fun_inps['threshold_datum'] + '\n' +
               'Time range =  ' + datetime.strftime(self.__fun_inps['data']['time'].iloc[0],'%Y-%m-%d') + ' to ' +  datetime.strftime(self.__fun_inps['data']['time'].iloc[-1],'%Y-%m-%d') + '\n' +

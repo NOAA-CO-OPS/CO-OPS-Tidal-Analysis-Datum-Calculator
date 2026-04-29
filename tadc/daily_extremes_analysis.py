@@ -33,6 +33,14 @@ class Out:
             ax.set_title('Daily Maximum Water Levels',fontsize=8)
         else:
             ax.set_title('Daily Minimum Water Levels',fontsize=8)
+        total_dt = self.__daily_extremes['time'].iloc[-1] - self.__daily_extremes['time'].iloc[0]
+        ticks = pd.date_range(self.__daily_extremes['time'].iloc[0],
+                              self.__daily_extremes['time'].iloc[-1],
+                              freq=total_dt/8)
+        ax.set_xlim(self.__daily_extremes['time'].iloc[0] - (total_dt/8/4),
+                    self.__daily_extremes['time'].iloc[-1] + (total_dt/8/4))
+        ax.set_xticks(ticks)
+        fig.autofmt_xdate()
         fig.show()
         return fig
 
