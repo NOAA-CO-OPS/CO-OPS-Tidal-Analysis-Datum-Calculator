@@ -140,7 +140,7 @@ def check_required_inputs(fname, data):
 
 
 class Out:
-    def __init__(self, data, readme, plots, high_lows, subordinate_monthly_means, datums, units):
+    def __init__(self, data, readme, plots, high_lows, subordinate_monthly_means, datums, units, input_file):
         self.data = data
         self.readme = readme
         self.plots = plots
@@ -149,17 +149,18 @@ class Out:
         self.datums = datums
         self.datums = {key: float(value) if isinstance(value, np.float64) else value for key, value in self.datums.items()}
         self.units = units
+        self.input_file = input_file
 
     def inundation_analysis(self, threshold, threshold_datum):
-        out_ia = ia.run(threshold, threshold_datum, self.data, self.datums, self.high_lows, self.units)
+        out_ia = ia.run(threshold, threshold_datum, self.data, self.datums, self.high_lows, self.units, self.input_file)
         return out_ia
 
     def daily_max_analysis(self, datum):
-        out_dmax = dea.run('max', datum, self.data, self.datums, self.units)
+        out_dmax = dea.run('max', datum, self.data, self.datums, self.units, self.input_file)
         return out_dmax
 
     def daily_min_analysis(self, datum):
-        out_dmin = dea.run('min', datum, self.data, self.datums, self.units)
+        out_dmin = dea.run('min', datum, self.data, self.datums, self.units, self.input_file)
         return out_dmin
     
 
@@ -197,11 +198,13 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
             path = ''
         OutFile = SDC_Print(['Using ', fname[end_of_path+1:]], OutFile)
         ts_qa = qa.run(pd.read_csv(fname), resample_minutes)
-        qc.run(ts_qa, Control_Station_ID, Subordinate_Lat, Subordinate_Lon)      
+        qc.run(ts_qa, Control_Station_ID, Subordinate_Lat, Subordinate_Lon)
+        fname_for_out = fname[end_of_path+1:]
     else:
         OutFile = SDC_Print(['Using user input timeseries'], OutFile)
         ts_qa = qa.run(data, resample_minutes)
         qc.run(ts_qa, Control_Station_ID, Subordinate_Lat, Subordinate_Lon)
+        fname_for_out = 'user-input data'
         
     #Get time offset if subordinate is not gmt
     OutFile = SDC_Print(['Time Zone = ' + Time_Zone], OutFile)
@@ -1282,7 +1285,8 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
     OutFile = SDC_Print(['\nThat is all.'], OutFile)
     
     
-    out = Out(pd.DataFrame({'time':x,'val':y}), OutFile, out_plots, high_lows, subordinate_monthly_means, datums, Units)
+    out = Out(pd.DataFrame({'time':x,'val':y}), OutFile, out_plots, high_lows, subordinate_monthly_means,
+              datums, Units, fname_for_out)
         
     return out
 

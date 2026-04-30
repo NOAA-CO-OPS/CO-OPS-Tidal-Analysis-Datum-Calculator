@@ -4,7 +4,7 @@ import pandas as pd
 
 
 class Out:
-    def __init__(self, daily_extremes, extremes_type, datum, units):
+    def __init__(self, daily_extremes, extremes_type, datum, units, input_file):
         self.__daily_extremes = daily_extremes
         if extremes_type == 'max':
             self.daily_maxs = daily_extremes
@@ -12,8 +12,12 @@ class Out:
         elif extremes_type == 'min':
             self.daily_mins = daily_extremes
             self.daily_maxs = None
-        self.datum = datum
+        if datum == 'Input':
+            self.datum = 'input datum'
+        else:
+            self.datum = datum
         self.units = units
+        self.input_file = input_file
             
     def percentile(self, prctile):
         return self.__daily_extremes['elevation'].quantile(prctile/100)
@@ -23,16 +27,16 @@ class Out:
         ax.tick_params(axis='both',labelsize=8)
         ax.grid('on',linestyle='--')
         ax.plot(self.__daily_extremes['time'],self.__daily_extremes['elevation'],'-o',label='Daily max',zorder=2)
-        ax.set_ylabel('Elevation ('+self.units+', '+self.datum+')',fontsize=8)
+        ax.set_ylabel('Elevation ('+self.units+' above '+self.datum+')',fontsize=8)
         if prctile != None:
             prctile_elev = self.percentile(prctile)
             ax.set_xlim(ax.get_xlim())
             ax.plot(ax.get_xlim(),[prctile_elev,prctile_elev],'k--',label=str(prctile)+' percentile',zorder=3)
             ax.legend(fontsize=8)
         if self.daily_maxs is not None:
-            ax.set_title('Daily Maximum Water Levels',fontsize=8)
+            ax.set_title('Daily Maximum Water Levels for '+self.input_file,fontsize=8)
         else:
-            ax.set_title('Daily Minimum Water Levels',fontsize=8)
+            ax.set_title('Daily Minimum Water Levels for '+self.input_file,fontsize=8)
         total_dt = self.__daily_extremes['time'].iloc[-1] - self.__daily_extremes['time'].iloc[0]
         ticks = pd.date_range(self.__daily_extremes['time'].iloc[0],
                               self.__daily_extremes['time'].iloc[-1],
@@ -45,7 +49,9 @@ class Out:
         return fig
 
        
-def run(extremes_type, datum, data, datums, units):
+def run(extremes_type, datum, data, datums, units, input_file):
+    datums['Input'] = 0
+    
     # Get timestamps into a usable format #
     data = data.rename(columns={data.columns[0]:'time',data.columns[1]:'val'})
     data['time'] = pd.to_datetime(data['time'])
@@ -67,4 +73,4 @@ def run(extremes_type, datum, data, datums, units):
     dm = dm.rename(columns={'time':'time','val':'elevation'})
     dm['completeness'] = per_complete.values
 
-    return Out(dm, extremes_type, datum, units)
+    return Out(dm, extremes_type, datum, units, input_file)

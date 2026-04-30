@@ -6,17 +6,21 @@ import pandas as pd
 
 
 class Out:
-    def __init__(self, inundations, datum, units, fun_inps):
+    def __init__(self, inundations, datum, units, input_file, fun_inps):
         self.inundations = inundations
-        self.datum = datum
+        if datum == 'Input':
+            self.datum = 'input datum'
+        else:
+            self.datum = datum
         self.units = units
+        self.input_file = input_file
         self.__fun_inps = fun_inps
 
     def plot(self):
         fig_picks,ax = plt.subplots(1,figsize=(9,5))
         ax.plot(self.__fun_inps['data']['time'],self.__fun_inps['data']['val'] - self.__fun_inps['datums'][self.__fun_inps['threshold_datum']],zorder=2,label='Data')
         ax.plot(ax.get_xlim(),[self.__fun_inps['threshold'],self.__fun_inps['threshold']],'k--',zorder=3,label='Threshold')
-        ax.set_ylabel('Elevation ('+self.units+', '+self.datum+')',fontsize=8)
+        ax.set_ylabel('Elevation ('+self.units+' above '+self.datum+')',fontsize=8)
         ax.grid('on',linestyle='--')
         ax.tick_params(axis='both',labelsize=8)
         ax.plot(self.inundations['Period Start'],np.tile(self.__fun_inps['threshold'],len(self.inundations)),'ks',markerfacecolor='r',zorder=2,label='Threshold crossing')
@@ -30,8 +34,8 @@ class Out:
                     self.__fun_inps['data']['time'].iloc[-1] + (total_dt/8/4))
         ax.set_xticks(ticks)
         fig_picks.autofmt_xdate()
-        ax.set_title(('Inundation History\n' + 
-              'Threshold = ' + str(self.__fun_inps['threshold']) + ' '+self.units+' above ' + self.__fun_inps['threshold_datum'] + '\n' +
+        ax.set_title(('Inundation History for '+self.input_file+'\n' + 
+              'Threshold = ' + str(self.__fun_inps['threshold']) + ' '+self.units+' above ' + self.datum + '\n' +
               'Time range =  ' + datetime.strftime(self.__fun_inps['data']['time'].iloc[0],'%Y-%m-%d') + ' to ' +  datetime.strftime(self.__fun_inps['data']['time'].iloc[-1],'%Y-%m-%d') + '\n' +
               'Results: ' + str(len(self.inundations)) + ' Inundations. Total Duration = ' + str(round(self.inundations['Duration (hours)'].sum(),2)) + ' hours '+
               '(' + str(round(self.inundations['Duration (hours)'].sum()/((self.__fun_inps['data']['time'].iloc[-1]- self.__fun_inps['data']['time'].iloc[0]).total_seconds()/60/60)*100,2)) + '%)'),
@@ -46,8 +50,8 @@ class Out:
         axx.set_ylabel('Maximum Elevation ('+self.units+') Above Threshold',fontsize=8)
         axx.tick_params(axis='both',labelsize=8)
         axx.set_ylim(0,axx.get_ylim()[-1])
-        axx.set_title(('Maximum Elevation vs. Duration of Inundation\n' + 
-                      'Threshold = ' + str(self.__fun_inps['threshold']) + ' '+self.units+' above ' + self.__fun_inps['threshold_datum'] + '\n' +
+        axx.set_title(('Maximum Elevation vs. Duration of Inundation for '+self.input_file+'\n' + 
+                      'Threshold = ' + str(self.__fun_inps['threshold']) + ' '+self.units+' above ' + self.datum + '\n' +
                       'Time range =  ' + datetime.strftime(self.__fun_inps['data']['time'].iloc[0],'%Y-%m-%d') + ' to ' +  datetime.strftime(self.__fun_inps['data']['time'].iloc[-1],'%Y-%m-%d') + '\n' +
                       'Results: ' + str(len(self.inundations)) + ' Inundations. Total Duration = ' + str(round(self.inundations['Duration (hours)'].sum(),2)) + ' hours '+
                       '(' + str(round(self.inundations['Duration (hours)'].sum()/((self.__fun_inps['data']['time'].iloc[-1]- self.__fun_inps['data']['time'].iloc[0]).total_seconds()/60/60)*100,2)) + '%)'),
@@ -89,8 +93,8 @@ class Out:
         axxx2.set_ylabel('Percentage of Inundation',fontsize=8)
         axxx2.tick_params(axis='both',labelsize=8)
         axxx.grid('on',linestyle='--')
-        axxx.set_title(('Frequency of Elevations\n' + 
-              'Threshold = ' + str(self.__fun_inps['threshold']) + ' '+self.units+' above ' + self.__fun_inps['threshold_datum'] + '\n' +
+        axxx.set_title(('Frequency of Elevations for '+self.input_file+'\n' + 
+              'Threshold = ' + str(self.__fun_inps['threshold']) + ' '+self.units+' above ' + self.datum + '\n' +
               'Time range =  ' + datetime.strftime(self.__fun_inps['data']['time'].iloc[0],'%Y-%m-%d') + ' to ' +  datetime.strftime(self.__fun_inps['data']['time'].iloc[-1],'%Y-%m-%d') + '\n' +
               'Results: ' + str(len(self.inundations)) + ' Inundations. Total Duration = ' + str(round(self.inundations['Duration (hours)'].sum(),2)) + ' hours '+
               '(' + str(round(self.inundations['Duration (hours)'].sum()/((self.__fun_inps['data']['time'].iloc[-1]- self.__fun_inps['data']['time'].iloc[0]).total_seconds()/60/60)*100,2)) + '%)'),
@@ -126,8 +130,8 @@ class Out:
         axxx2.set_ylabel('Percentage of Inundation',fontsize=8)
         axxx2.tick_params(axis='both',labelsize=8)
         axxx.grid('on',linestyle='--')
-        axxx.set_title(('Frequency of Durations\n' + 
-              'Threshold = ' + str(self.__fun_inps['threshold']) + ' '+self.units+' above ' + self.__fun_inps['threshold_datum'] + '\n' +
+        axxx.set_title(('Frequency of Durations for '+self.input_file+'\n' + 
+              'Threshold = ' + str(self.__fun_inps['threshold']) + ' '+self.units+' above ' + self.datum + '\n' +
               'Time range =  ' + datetime.strftime(self.__fun_inps['data']['time'].iloc[0],'%Y-%m-%d') + ' to ' +  datetime.strftime(self.__fun_inps['data']['time'].iloc[-1],'%Y-%m-%d') + '\n' +
               'Results: ' + str(len(self.inundations)) + ' Inundations. Total Duration = ' + str(round(self.inundations['Duration (hours)'].sum(),2)) + ' hours '+
               '(' + str(round(self.inundations['Duration (hours)'].sum()/((self.__fun_inps['data']['time'].iloc[-1]- self.__fun_inps['data']['time'].iloc[0]).total_seconds()/60/60)*100,2)) + '%)'),
@@ -139,7 +143,9 @@ class Out:
         return [fig_picks, fig_d_vs_h, fig_f_of_elev, fig_f_of_dur]
 
 
-def run(threshold, threshold_datum, data, datums, high_lows, units):
+def run(threshold, threshold_datum, data, datums, high_lows, units, input_file):
+    datums['Input'] = 0
+    
     # Get timestamps into a usable format #
     data = data.rename(columns={data.columns[0]:'time',data.columns[1]:'val'})
     data['time'] = pd.to_datetime(data['time'])
@@ -180,9 +186,9 @@ def run(threshold, threshold_datum, data, datums, high_lows, units):
         c = -1
         for group in exceedance_groups:
             c += 1
-            up_cross_df_i = data_dwant.iloc[group.index[0]-1:group.index[0]+1].resample('1min',kind='timestamp',on='time').mean().interpolate().reset_index()
+            up_cross_df_i = data_dwant.iloc[group.index[0]-1:group.index[0]+1].resample('1min',on='time').mean().interpolate().reset_index()
             up_cross_time = up_cross_df_i.iloc[(up_cross_df_i['val'] - threshold).abs().argmin()]['time']        
-            down_cross_df_i = data_dwant.iloc[group.index[-1]:group.index[-1]+2].resample('1min',kind='timestamp',on='time').mean().interpolate().reset_index()
+            down_cross_df_i = data_dwant.iloc[group.index[-1]:group.index[-1]+2].resample('1min',on='time').mean().interpolate().reset_index()
             down_cross_time = down_cross_df_i.iloc[(down_cross_df_i['val'] - threshold).abs().argmin()]['time']
             peak_time = group['time'].iloc[group['val'].argmax()]
             try:
@@ -201,7 +207,7 @@ def run(threshold, threshold_datum, data, datums, high_lows, units):
             else:
                 inundations = pd.concat([inundations,row],ignore_index=True) 
 
-        return Out(inundations, threshold_datum, units, {'threshold' : threshold , 'threshold_datum' : threshold_datum , 'data' : data , 'datums' : datums})
+        return Out(inundations, threshold_datum, units, input_file, {'threshold' : threshold , 'threshold_datum' : threshold_datum , 'data' : data , 'datums' : datums})
     
 
     
