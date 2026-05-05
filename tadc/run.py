@@ -505,7 +505,7 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
             majorLocator = matplotlib.ticker.MultipleLocator(5)
             minorLocator = matplotlib.ticker.MultipleLocator(1)
             yrmo = datetime(yr,mn,1).strftime('%B %Y')
-            ax.set_title('Observed Water Level and High/Low Tide Picks for ' + yrmo,fontsize=8)
+            ax.set_title('Observed Water Level and High/Low Tide Picks during ' + yrmo + '\nfor ' + fname_for_out,fontsize=8)
             ax.tick_params(axis='both',labelsize=8)
             xax = ax.get_xaxis() 
             xax.set_major_locator(majorLocator)
