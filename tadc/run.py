@@ -12,6 +12,7 @@ import argparse
 import configparser
 from datetime import datetime, date, time, timedelta
 from dateutil.parser import parse
+from dateutil.relativedelta import relativedelta
 import logging
 import matplotlib
 import matplotlib.dates as mdates
@@ -141,15 +142,35 @@ def check_required_inputs(fname, data):
 
 class Out:
     def __init__(self, data, readme, plots, high_lows, subordinate_monthly_means, datums, units, input_file):
-        self.data = data
+        if units == 'Meters' or units == 'meters' or units == 'm':
+            n_decimals = 3
+        elif units == 'Centimeters' or units == 'centimeters' or units == 'cm':
+            n_decimals = 1
+        elif units == 'Millimeters' or units == 'millimeters' or units == 'mm':
+            n_decimals = 0
+        elif units == 'Feet' or units == 'feet' or units == 'ft':
+            n_decimals = 2
+        elif units == 'Inches' or units == 'inches' or units == 'in':
+            n_decimals = 1
+            
+        self.data = data.round(n_decimals)
         self.readme = readme
         self.plots = plots
-        self.high_lows = high_lows
-        self.subordinate_monthly_means = subordinate_monthly_means
+        self.high_lows = high_lows.round(n_decimals)
+        self.subordinate_monthly_means = subordinate_monthly_means.round(n_decimals)
         self.datums = datums
         self.datums = {key: float(value) if isinstance(value, np.float64) else value for key, value in self.datums.items()}
+        for datum in ['HWL','MHHW','MHW','DTL','MTL','MSL','MLW','MLLW','DHQ','DLQ','MN','GT','LWL']:
+            self.datums[datum] = round(self.datums[datum],n_decimals)
         self.units = units
         self.input_file = input_file
+
+        if units == 'Millimeters' or units == 'millimeters' or units == 'mm':
+            self.data['val'] = self.data['val'].astype(int)
+            self.high_lows['value'] = self.high_lows['value'].astype(int)
+            self.subordinate_monthly_means= self.subordinate_monthly_means.set_index('time').astype(int).reset_index()
+            for datum in ['HWL','MHHW','MHW','DTL','MTL','MSL','MLW','MLLW','DHQ','DLQ','MN','GT','LWL']:
+                self.datums[datum] = int(self.datums[datum])
 
     def inundation_analysis(self, threshold, threshold_datum):
         out_ia = ia.run(threshold, threshold_datum, self.data, self.datums, self.high_lows, self.units, self.input_file)
@@ -229,6 +250,15 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
     y = np.array(data[data.columns[1]])
 
     OutFile = SDC_Print([len(x), ' data points loaded.'], OutFile)
+
+    # If a control station is being used, ensure calculation is done only up to
+    # two months prior to the current month due to delays in releasing verified data.
+    if Control_Station_ID is not None:
+        cutoff = (datetime.now() - relativedelta(months=1)).replace(day=1,hour=0,minute=0,second=0,microsecond=0) - relativedelta(seconds=1)
+        if x[-1].replace(tzinfo=None) > cutoff:
+            y = y[pd.Series(x).dt.tz_localize(None) < cutoff]
+            x = x[pd.Series(x).dt.tz_localize(None) < cutoff]
+            logger.warning('WARNING: Verified control station data are not yet available through the end of the user-input timeseries. Only using data through '+cutoff.strftime('%b %d %Y')+'.')
 
     #Determine interval and check for consistency
     Interval = x[1] - x[0]

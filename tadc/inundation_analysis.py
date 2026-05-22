@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
@@ -178,22 +178,19 @@ def run(threshold, threshold_datum, data, datums, high_lows, units, input_file):
         group_end_final = down_crosses[-1]
         group_final = data_dwant.iloc[group_start_final:group_end_final]
         exceedance_groups.append(group_final)
-
-        #if np.where(up_crosses)[0][0]<np.where(down_crosses)[0][0]:
-        #    exceedance_groups = [data_dwant.iloc[np.where(up_crosses)[0][i]:np.where(down_crosses)[0][i]] for i in range(len(np.where(up_crosses)[0]))]
-          
-        # For each exceedance, interpolate to before first and after last points to find precise exceedance time, and make a nice DataFrame with results #  
+        
+        # For each exceedance, get the first, last, and peak times and format to nice DataFrame #  
         c = -1
         for group in exceedance_groups:
             c += 1
-            up_cross_df_i = data_dwant.iloc[group.index[0]-1:group.index[0]+1].resample('1min',on='time').mean().interpolate().reset_index()
-            up_cross_time = up_cross_df_i.iloc[(up_cross_df_i['val'] - threshold).abs().argmin()]['time']        
-            down_cross_df_i = data_dwant.iloc[group.index[-1]:group.index[-1]+2].resample('1min',on='time').mean().interpolate().reset_index()
-            down_cross_time = down_cross_df_i.iloc[(down_cross_df_i['val'] - threshold).abs().argmin()]['time']
+            up_cross_time = group.iloc[0]['time']
+            down_cross_time = group.iloc[-1]['time']
             peak_time = group['time'].iloc[group['val'].argmax()]
-            try:
-                tide_type = high_lows[high_lows['time'] == peak_time]['tide type'].values[0]
-            except IndexError:
+            d = (high_lows['time']-peak_time.replace(tzinfo=None)).abs().min()
+            di = (high_lows['time']-peak_time.replace(tzinfo=None)).abs().argmin()
+            if d<timedelta(minutes=30):
+                tide_type = high_lows.iloc[di]['tide type']
+            else:
                 tide_type = 'Unknown'
             row = pd.DataFrame({'Peak Date/Time':group['time'].iloc[group['val'].argmax()],
                                 'Period Start':[up_cross_time],
