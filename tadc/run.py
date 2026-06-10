@@ -126,6 +126,32 @@ def SDC_Print(PLines, OutFile):
     return OutFile
 
 
+def Get_GMT_Offset(Time_Zone):
+    #This function parses the gmt offset from the trailing digits of the Time_Zone string
+    hrstr = ''
+    n = len(Time_Zone)-1
+    while Time_Zone[n].isdigit():
+        hrstr = Time_Zone[n] + hrstr
+        n = n-1
+    if len(hrstr) > 0:
+        gmt_offset = int(hrstr)
+    else:
+        gmt_offset = 0
+    return gmt_offset
+
+
+def str2bool(v):
+    #This function converts a command line string argument to a boolean
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected, got ' + str(v))
+
+
 def check_required_inputs(fname, data):
     if fname is None and data is None:
         raise ValueError('Either `fname` or `data` must be specified.')
@@ -229,15 +255,7 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
         
     #Get time offset if subordinate is not gmt
     OutFile = SDC_Print(['Time Zone = ' + Time_Zone], OutFile)
-    hrstr = ''
-    n = len(Time_Zone)-1
-    while Time_Zone[n].isdigit():
-        hrstr = hrstr + Time_Zone[n]
-        n = n-1
-    if len(hrstr) > 0:
-        gmt_offset = int(hrstr)
-    else:
-        gmt_offset = 0
+    gmt_offset = Get_GMT_Offset(Time_Zone)
 
     #Get Date-Times and Water Levels from csv file using Pandas
     data = ts_qa
@@ -1393,7 +1411,7 @@ if __name__ == '__main__':
                               "If left as None, output files will not be saved.\n"
                               "(Default: None)"))
     parser.add_argument('--make_plots',
-                        type=bool,
+                        type=str2bool,
                         default=False,
                         help=("Whether or not to generate monthly plots. It is somewhat slow to generate the plots, \n"
                               "particularly for large input datasets."

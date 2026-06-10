@@ -61,7 +61,7 @@ def Check_Tide_Order(dt, h, l):
     ttype = tide_types[0]
     for i in range(1,len(tides)-1):
         if tide_types[i] == ttype:
-            logger.warning('Tides are out of order at:', dt[tides[i]])
+            logger.warning('Tides are out of order at: %s', dt[tides[i]])
             return -1
         ttype = tide_types[i]
         i = i+1
@@ -111,7 +111,7 @@ def Lowest(l_dts, l_vals, t1, t2):
     for i in range(len(l_dts)):
         if ((l_dts[i] >= t1) and (l_dts[i] <= t2)):
             if (l_vals[i] < minval):
-               mxval = l_vals[i]
+               minval = l_vals[i]
                mxindex = i
     return mxindex
 
@@ -122,6 +122,9 @@ def Nearest_Tide(t_dts, dt):
     i=0
     while (t_dts[i] < dt and i<(len(t_dts)-1)):
         i = i+1
+    if (i == 0):
+        #dt is at or before the first tide; t_dts[i-1] would wrap to the last tide
+        return 0
     if ((dt-t_dts[i-1]) < (t_dts[i]-dt)):
         i = i-1
     return i
@@ -385,6 +388,10 @@ def Calc_Expected_Diff(HL_Sub, HL_Con):
         else:
             MeanLDiff = MeanLDiff + Pairs[i][3]
             NLows = NLows + 1
+    if NHighs == 0 or NLows == 0:
+        #No paired highs or no paired lows - the comparison cannot proceed
+        logger.warning('***Error*** Fatal issue. Exiting Analysis.')
+        raise RuntimeError('Fatal issue. Exiting Analysis.')
     MeanHDiff = MeanHDiff / NHighs
     MeanLDiff = MeanLDiff / NLows
     #Calculate mean of diffs above the mean and below the mean
@@ -411,29 +418,31 @@ def Calc_Expected_Diff(HL_Sub, HL_Con):
             if abs(Pairs[i][3]) < abs(MeanLDiff):
                 MeanLDiffBelow = MeanLDiffBelow + Pairs[i][3]
                 NLowsBelow = NLowsBelow + 1
+    #A bucket can legitimately be empty (all diffs equal the mean, or all fall on
+    #one side of it) - fall back to the overall mean instead of aborting
     if NHighsAbove==0:
-        SDC_Print(['Error. No Highs above mean.'])
+        logger.warning('Error. No Highs above mean.')
+        MeanHDiffAbove = MeanHDiff
     else:
         MeanHDiffAbove = MeanHDiffAbove / NHighsAbove
 
     if NLowsAbove ==0:
         logger.warning('Error. No Lows above mean.')
+        MeanLDiffAbove = MeanLDiff
     else:
         MeanLDiffAbove = MeanLDiffAbove / NLowsAbove
 
     if NHighsBelow == 0:
         logger.warning('Error. No Highs below mean.')
+        MeanHDiffBelow = MeanHDiff
     else:
         MeanHDiffBelow = MeanHDiffBelow / NHighsBelow
 
     if NLowsBelow == 0:
         logger.warning('Error. No Lows below mean.')
+        MeanLDiffBelow = MeanLDiff
     else:
         MeanLDiffBelow = MeanLDiffBelow / NLowsBelow
-
-    if NHighsAbove == 0 or NLowsAbove == 0 or NHighsBelow == 0 or NLowsBelow == 0:
-        logger.warning('***Error*** Fatal issue. Exiting Analysis.')
-        exit(-1)
 
     if NHighsAbove > NHighsBelow:
         Diff = MeanHDiffAbove
