@@ -28,12 +28,15 @@ class Tests:
 
     def check_control_station_distance(self):
         if self.control_station_id != None:
-            r = requests.get('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/' + str(self.control_station_id) + '.json?units=english')
-            lat_control = r.json()['stations'][0]['lat']
-            lon_control = r.json()['stations'][0]['lng']
-            d = self._haversine(self.subordinate_lat,self.subordinate_lon,lat_control,lon_control)
-            if d > 10:
-                logger.warn('WARNING: Control station is ' + str(round(d,2)) + ' km from subordinate station.')
+            if self.subordinate_lat is not None and self.subordinate_lon is not None:
+                r = requests.get('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/' + str(self.control_station_id) + '.json?units=english')
+                lat_control = r.json()['stations'][0]['lat']
+                lon_control = r.json()['stations'][0]['lng']
+                d = self._haversine(self.subordinate_lat,self.subordinate_lon,lat_control,lon_control)
+                if d > 10:
+                    logger.warning('WARNING: Control station is ' + str(round(d,2)) + ' km from subordinate station.')
+            else:
+                logger.warning('WARNING: Subordinate station lat and lon not provided. Distance between control and subordinate sations unknown.') 
 
     @staticmethod
     def _haversine(lat1, lon1, lat2, lon2):

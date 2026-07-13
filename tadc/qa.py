@@ -7,9 +7,10 @@ logger = logging.getLogger(__name__)
 
 
 class Assurances:
-    def __init__(self, ts, resample_minutes):
+    def __init__(self, ts, resample_minutes, conversion_fac):
         self.ts = ts
         self.resample_minutes = resample_minutes
+        self.conversion_fac = conversion_fac
         
     def assure_no_unreadable_values(self):
         ts = self.ts.rename(columns={self.ts.columns[0]:'time',self.ts.columns[1]:'val'})
@@ -52,7 +53,7 @@ class Assurances:
                 self.ts = ts
                 
     def assure_flatlines_are_gaps(self):
-        is_flatline = self.ts['val'].diff().abs() < 0.001
+        is_flatline = self.ts['val'].diff().abs() < 0.001 * self.conversion_fac
         consecutive_groups = is_flatline.ne(is_flatline.shift()).cumsum()
         group_sizes = consecutive_groups.groupby(consecutive_groups).transform('size')
         is_long_flatline = is_flatline & (group_sizes > 1)
@@ -63,8 +64,8 @@ class Assurances:
             logger.warning('WARNING: Flatlines detected. Treating flatlines as missing data.')
             
         
-def run(ts, resample_minutes):
-    assurances = Assurances(ts, resample_minutes)
+def run(ts, resample_minutes, conversion_fac):
+    assurances = Assurances(ts, resample_minutes, conversion_fac)
     assurances.assure_no_unreadable_values()
     assurances.assure_even_temporal_spacing()
     assurances.assure_flatlines_are_gaps()

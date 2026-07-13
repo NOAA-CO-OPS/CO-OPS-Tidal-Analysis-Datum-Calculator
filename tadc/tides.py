@@ -61,7 +61,7 @@ def Check_Tide_Order(dt, h, l):
     ttype = tide_types[0]
     for i in range(1,len(tides)-1):
         if tide_types[i] == ttype:
-            logger.warning('Tides are out of order at:', dt[tides[i]])
+            logger.warning('WARNING: Tides are out of order at: %s', dt[tides[i]])
             return -1
         ttype = tide_types[i]
         i = i+1
@@ -106,14 +106,14 @@ def Highest(h_dts, h_vals, t1, t2):
 
 def Lowest(l_dts, l_vals, t1, t2):
     #This function returns the index of the lowest value between t1 and t2
-    mxindex = -1
+    minindex = -1
     minval = 99999.99
     for i in range(len(l_dts)):
         if ((l_dts[i] >= t1) and (l_dts[i] <= t2)):
             if (l_vals[i] < minval):
-               mxval = l_vals[i]
-               mxindex = i
-    return mxindex
+               minval = l_vals[i]
+               minindex = i
+    return minindex
 
 
 def Nearest_Tide(t_dts, dt):
@@ -412,7 +412,7 @@ def Calc_Expected_Diff(HL_Sub, HL_Con):
                 MeanLDiffBelow = MeanLDiffBelow + Pairs[i][3]
                 NLowsBelow = NLowsBelow + 1
     if NHighsAbove==0:
-        SDC_Print(['Error. No Highs above mean.'])
+        logger.warning('Error. No Highs above mean.')
     else:
         MeanHDiffAbove = MeanHDiffAbove / NHighsAbove
 
@@ -432,8 +432,7 @@ def Calc_Expected_Diff(HL_Sub, HL_Con):
         MeanLDiffBelow = MeanLDiffBelow / NLowsBelow
 
     if NHighsAbove == 0 or NLowsAbove == 0 or NHighsBelow == 0 or NLowsBelow == 0:
-        logger.warning('***Error*** Fatal issue. Exiting Analysis.')
-        exit(-1)
+        raise RuntimeError('Fatal issue. Exiting Analysis.')
 
     if NHighsAbove > NHighsBelow:
         Diff = MeanHDiffAbove

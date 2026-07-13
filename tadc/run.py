@@ -21,7 +21,9 @@ import numpy as np
 from numpy import diff, sign, mean
 import os
 import pandas as pd
+import re
 from scipy.signal import butter, filtfilt
+import shutil
 import sys
 from time import gmtime, strftime
 import warnings
@@ -126,7 +128,7 @@ def SDC_Print(PLines, OutFile):
     return OutFile
 
 
-def check_required_inputs(fname, data):
+def check_required_inputs(fname, data, Control_Station_ID, epoch_start_year):
     if fname is None and data is None:
         raise ValueError('Either `fname` or `data` must be specified.')
     elif fname is not None and data is not None:
@@ -138,6 +140,8 @@ def check_required_inputs(fname, data):
         elif data is not None:
             if not isinstance(data,pd.core.frame.DataFrame):
                 raise ValueError('Input arg `data` must be a two-column pandas DataFrame.')
+    if Control_Station_ID is None and epoch_start_year != 1983:
+        raise ValueError('Setting epoch_start_year without specifying Control_Station_ID has no effect.')
 
 
 class Out:
@@ -153,11 +157,14 @@ class Out:
         elif units == 'Inches' or units == 'inches' or units == 'in':
             n_decimals = 1
             
-        self.data = data.round(n_decimals)
+        data.update(data.select_dtypes(include='number').round(n_decimals))
+        self.data = data
         self.readme = readme
         self.plots = plots
-        self.high_lows = high_lows.round(n_decimals)
-        self.subordinate_monthly_means = subordinate_monthly_means.round(n_decimals)
+        high_lows.update(high_lows.select_dtypes(include='number').round(n_decimals))
+        self.high_lows = high_lows
+        subordinate_monthly_means.update(subordinate_monthly_means.select_dtypes(include='number').round(n_decimals))
+        self.subordinate_monthly_means = subordinate_monthly_means
         self.datums = datums
         self.datums = {key: float(value) if isinstance(value, np.float64) else value for key, value in self.datums.items()}
         for datum in ['HWL','MHHW','MHW','DTL','MTL','MSL','MLW','MLLW','DHQ','DLQ','MN','GT','LWL']:
@@ -185,8 +192,9 @@ class Out:
         return out_dmin
     
 
-def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', Control_Station_ID=None, Method_Option='AUTO',
-         Time_Zone='GMT', Units='Meters', Subordinate_Lat=None, Subordinate_Lon=None, outfile_save_dir='None', make_plots=False):
+def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', Control_Station_ID=None, epoch_start_year=1983,
+        Method_Option='AUTO', Time_Zone='GMT', Units='Meters', Subordinate_Lat=None, Subordinate_Lon=None,
+        outfile_save_dir='None', make_plots=False):
 
     #Init the output readme
     OutFile = ''
@@ -209,8 +217,28 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
      
     OutFile = SDC_Print (['Run Time: ', strftime("%Y-%m-%d %H:%M:%S", gmtime())], OutFile)
 
+    # Check for input units.  Get conversion factor from meters.
+    if Units.upper() == 'METERS':
+        CFactor = 1.0
+        fmt = "%.3f"
+    elif Units.upper() == 'CENTIMETERS':
+        CFactor = 100.0
+        fmt = "%.1f"
+    elif Units.upper() == 'MILLIMETERS':
+        CFactor = 1000.0
+        fmt = "%.0f"
+    elif Units.upper() == 'FEET':
+        CFactor = 3.28084
+        fmt = "%.2f"
+    elif Units.upper() == 'INCHES':
+        CFactor = 39.3701
+        fmt = "%.1f"
+    else:
+        OutFile = SDC_Print(['***Error*** Input units of', Units, 'not defined.'], OutFile)
+        raise RuntimeError('Input units of ' + Units + ' not defined.')
+
     # Run the QA/QC to ensure input data is ok and then initiate the data #
-    check_required_inputs(fname,data)
+    check_required_inputs(fname,data,Control_Station_ID,epoch_start_year)
     if fname is not None:
         end_of_path = fname.rfind('/')
         if end_of_path > -1:
@@ -218,24 +246,20 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
         else:
             path = ''
         OutFile = SDC_Print(['Using ', fname[end_of_path+1:]], OutFile)
-        ts_qa = qa.run(pd.read_csv(fname), resample_minutes)
+        ts_qa = qa.run(pd.read_csv(fname), resample_minutes, CFactor)
         qc.run(ts_qa, Control_Station_ID, Subordinate_Lat, Subordinate_Lon)
         fname_for_out = fname[end_of_path+1:]
     else:
         OutFile = SDC_Print(['Using user input timeseries'], OutFile)
-        ts_qa = qa.run(data, resample_minutes)
+        ts_qa = qa.run(data, resample_minutes, CFactor)
         qc.run(ts_qa, Control_Station_ID, Subordinate_Lat, Subordinate_Lon)
         fname_for_out = 'user-input data'
         
     #Get time offset if subordinate is not gmt
     OutFile = SDC_Print(['Time Zone = ' + Time_Zone], OutFile)
-    hrstr = ''
-    n = len(Time_Zone)-1
-    while Time_Zone[n].isdigit():
-        hrstr = hrstr + Time_Zone[n]
-        n = n-1
-    if len(hrstr) > 0:
-        gmt_offset = int(hrstr)
+    m = re.search(r'(\d+)$', Time_Zone)
+    if m:
+        gmt_offset = int(m.group(1))
     else:
         gmt_offset = 0
 
@@ -308,27 +332,8 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
         OutFile = SDC_Print(['***Error*** Not enough data for analysis. 2 weeks minimum'], OutFile)
         raise RuntimeError('Not enough data for analysis. 2 weeks minimum')
 
-    #Check for input units.  Get conversion factor from meters
+    # Display units info. #
     OutFile = SDC_Print([Units.upper()], OutFile)
-    if Units.upper() == 'METERS':
-        CFactor = 1.0
-        fmt = "%.3f"
-    elif Units.upper() == 'CENTIMETERS':
-        CFactor = 100.0
-        fmt = "%.1f"
-    elif Units.upper() == 'MILLIMETERS':
-        CFactor = 1000.0
-        fmt = "%.0f"
-    elif Units.upper() == 'FEET':
-        CFactor = 3.28084
-        fmt = "%.2f"
-    elif Units.upper() == 'INCHES':
-        CFactor = 39.3701
-        fmt = "%.1f"
-    else:
-        OutFile = SDC_Print(['***Error*** Input units of', Units, 'not defined.'], OutFile)
-        raise RuntimeError('Input units of ' + Units + ' not defined.')
-
     OutFile = SDC_Print([''], OutFile)
     OutFile = SDC_Print(['All calculations and results are in', Units], OutFile)
 
@@ -521,26 +526,25 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
                     MLows.append(low_values[ii])
 
         if make_plots:
-            fig,ax = plt.subplots(1)
+            fig,ax = plt.subplots(1,figsize=(9,5))
             ax.plot(x[p1:p2], y[p1:p2], 'b-', label='Observed Water Level')
             ax.plot(MHHTimes, MHHighs, label = 'Higher Highs/Lower Lows', marker='D', markersize=3, linestyle='None', color='r')
             ax.plot(MHTimes, MHighs, label = 'Highs/Lows', marker='o', markersize=3, linestyle='None', color='m')
             ax.plot(MLLTimes, MLLows, marker='D', markersize=3, linestyle='None', color='r')
             ax.plot(MLTimes, MLows, marker='o', markersize=3, linestyle='None', color='m')
 
-            ax.set_ylabel(Units,fontsize=8)
+            ax.set_ylabel('Elevation (' + Units + ' above input datum)',fontsize=8)
             ax.grid('on')
             ax.legend(fontsize=8)
 
-            majorLocator = matplotlib.ticker.MultipleLocator(5)
-            minorLocator = matplotlib.ticker.MultipleLocator(1)
+            total_dt = x[p1:p2][-1] - x[p1:p2][0]
+            ticks = pd.date_range(x[p1:p2][0],x[p1:p2][-1],freq=total_dt/6)
+            ax.set_xlim(x[p1:p2][0] - (total_dt/6/4),x[p1:p2][-1] + (total_dt/6/4))
+            ax.set_xticks(ticks)
+            ax.get_xaxis().set_major_formatter(mdates.DateFormatter('%m/%d/%y'))
             yrmo = datetime(yr,mn,1).strftime('%B %Y')
             ax.set_title('Observed Water Level and High/Low Tide Picks during ' + yrmo + '\nfor ' + fname_for_out,fontsize=8)
             ax.tick_params(axis='both',labelsize=8)
-            xax = ax.get_xaxis() 
-            xax.set_major_locator(majorLocator)
-            #format major xtick label
-            xax.set_major_formatter(mdates.DateFormatter('%m/%d/%y'))
             times.append('Month' + str(pn))
             figs.append(fig)
             plt.close(fig)
@@ -639,12 +643,15 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
 
     if Calc_Method == 'MMSC' or Calc_Method == 'TBYT':
     #Get Accepted Datums for Control Station
-        Control_Acc_Datums = cd.Get_Accepted_Datums(Control_Station_ID, CFactor)
+        Control_Acc_Datums = cd.Get_Accepted_Datums(Control_Station_ID, epoch_start_year, gmt_offset, CFactor)
         if (Control_Acc_Datums[0] == None or Control_Acc_Datums[1] == None or 
            Control_Acc_Datums[5] == None or Control_Acc_Datums[6] == None):
             OutFile = SDC_Print(['***Error*** Problem retrieving Accepted Datums for station ', Control_Station_ID], OutFile)
             raise RuntimeError('Problem retrieving Accepted Datums for station ' + str(Control_Station_ID))
-        OutFile = SDC_Print(['Control Datums for: ' , Control_Station_ID], OutFile)
+        if epoch_start_year == 1983:
+            OutFile = SDC_Print(['Control Datums for: ' , Control_Station_ID], OutFile)
+        else:
+            OutFile = SDC_Print(['PRELIMINARY, UNOFFICIAL Control Datums for ' , Control_Station_ID, ' over ',epoch_start_year,'-',epoch_start_year+18,':'], OutFile)
         OutFile = SDC_Print(['\nMHHW,  MHW,  DTL,  MTL,  MSL,  MLW,  MLLW'], OutFile)
         MeanString = ''
         for di in range(0,7):
@@ -791,8 +798,6 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
         ##################################################################
     if Calc_Method == 'MMSC':
         OutFile = SDC_Print([' '], OutFile)
-        OutFile = SDC_Print([' TIDAL DATUMS BY Monthly Means Simultaneous Comparison:'], OutFile)
-        OutFile = SDC_Print([' '], OutFile)
 
         #Get Means for Control Station
         MM_Control = cd.Get_Monthly_Means(Control_Station_ID, start_month, start_year, end_month, end_year, CFactor)
@@ -800,8 +805,35 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
             OutFile = SDC_Print(['***Error*** No Monthly Means Returned for Control station: ', Control_Station_ID], OutFile)
             OutFile = SDC_Print(['Can not continue.'], OutFile)
             raise RuntimeError('No Monthly Means Returned for Control station: ' + str(Control_Station_ID) + '. Can not continue.')
-        OutFile = SDC_Print([len(MM_Control), 'Months of control station means retrieved.'], OutFile)
+        OutFile = SDC_Print(['CONTROL MONTHLY MEANS:'], OutFile)       
+        yrmo_strs = pd.date_range(datetime(start_year,start_month,1),datetime(end_year,end_month,1),freq='MS').strftime('%#m / %Y')
+        for i in range(len(MM_Control)):
+            mms = MM_Control[i]
+            OutFile = SDC_Print([yrmo_strs[i] + ' :'], OutFile)
+            OutFile = SDC_Print(['HWL  = ', fmt % mms[0]], OutFile)
+            OutFile = SDC_Print(['MHHW = ', fmt % mms[1]], OutFile)
+            OutFile = SDC_Print(['MHW  = ', fmt % mms[2]], OutFile)
+            OutFile = SDC_Print(['MSL  = ', fmt % mms[3]], OutFile)
+            OutFile = SDC_Print(['MLW  = ', fmt % mms[4]], OutFile)
+            OutFile = SDC_Print(['MLLW = ', fmt % mms[5]], OutFile)
+            OutFile = SDC_Print(['LWL  = ', fmt % mms[6]], OutFile)
 
+        # Print MMSC differences #
+        MM_diff = np.array(MM_Subordinate) - np.array(MM_Control)
+        OutFile = SDC_Print(['\nMONTHLY MEAN DIFFERENCES (SUBORDINATE - CONTROL):'], OutFile)       
+        for i in range(len(MM_diff)):
+            mms = MM_diff[i]
+            OutFile = SDC_Print([yrmo_strs[i] + ' :'], OutFile)
+            OutFile = SDC_Print(['HWL  = ', fmt % mms[0]], OutFile)
+            OutFile = SDC_Print(['MHHW = ', fmt % mms[1]], OutFile)
+            OutFile = SDC_Print(['MHW  = ', fmt % mms[2]], OutFile)
+            OutFile = SDC_Print(['MSL  = ', fmt % mms[3]], OutFile)
+            OutFile = SDC_Print(['MLW  = ', fmt % mms[4]], OutFile)
+            OutFile = SDC_Print(['MLLW = ', fmt % mms[5]], OutFile)
+            OutFile = SDC_Print(['LWL  = ', fmt % mms[6]], OutFile)
+
+        OutFile = SDC_Print(['\n TIDAL DATUMS BY Monthly Means Simultaneous Comparison:\n'], OutFile)
+        OutFile = SDC_Print([len(MM_Control), 'Months of control station means retrieved.'], OutFile)
         #Check That means tables are same size
         if len(MM_Subordinate) != len(MM_Control):
             OutFile = SDC_Print(['***Error*** Monthly means tables are different lengths!'], OutFile)
@@ -1346,6 +1378,10 @@ if __name__ == '__main__':
                               "Choose a control station or leave blank to default to First Reduction Datum (FRED) method.\n"
                               "If there is no control station Subordinate_Lon (the longitude of short-term station) is required for picking tide type.\n"
                               "(Default: 'None')"))
+    parser.add_argument('--epoch_start_year',
+                        type=int,
+                        default=1983,
+                        help=("19 year datum epoch start year. (Default: 1983)"))
     parser.add_argument('--Method_Option',
                         type=str,
                         default='AUTO',
@@ -1398,6 +1434,26 @@ if __name__ == '__main__':
                         help=("Whether or not to generate monthly plots. It is somewhat slow to generate the plots, \n"
                               "particularly for large input datasets."
                               "(Default: False)"))
+    parser.add_argument('--daily_max_analysis',
+                        type=str,
+                        default='None',
+                        help=("Run a daily maximums analysis on the specified datum. \n"
+                              "(Default: False)"))    
+    parser.add_argument('--daily_min_analysis',
+                        type=str,
+                        default='None',
+                        help=("Run a daily minimums analysis on the specified datum. \n"
+                              "(Default: 'None')"))    
+    parser.add_argument('--inundation_analysis',
+                        type=str,
+                        default='None',
+                        help=("Run an inundation analysis on the specified datum. \n"
+                              "(Default: 'None')"))
+    parser.add_argument('--inundation_threshold',
+                        type=float,
+                        default=None,
+                        help=("Run an inundation analysis on the specified datum above this threshold. \n"
+                              "(Default: None)"))     
     try:
         args = parser.parse_args()
     except SystemExit:
@@ -1407,6 +1463,7 @@ if __name__ == '__main__':
               resample_minutes=args.resample_minutes,
               Pick_Method=args.Pick_Method,
               Control_Station_ID=args.Control_Station_ID,
+              epoch_start_year=args.epoch_start_year,
               Method_Option=args.Method_Option,
               Time_Zone=args.Time_Zone,
               Units=args.Units,
@@ -1415,19 +1472,51 @@ if __name__ == '__main__':
               outfile_save_dir=args.outfile_save_dir,
               make_plots=args.make_plots)
     print(out.readme)
-
+    if args.daily_max_analysis != 'None':
+        pd.set_option('display.max_rows', None)
+        dma = out.daily_max_analysis(datum=args.daily_max_analysis)
+        print('DAILY MAXIMA ABOVE ' + args.daily_max_analysis + ':')
+        print(dma.daily_maxs)  
+    if args.daily_min_analysis != 'None':
+        pd.set_option('display.max_rows', None)
+        dmi = out.daily_min_analysis(datum=args.daily_min_analysis)
+        print('\nDAILY MINIMA ABOVE ' + args.daily_min_analysis + ':')
+        print(dmi.daily_mins)
+    if args.inundation_analysis != None and args.inundation_threshold is not None:
+        pd.set_option('display.max_rows', None)
+        ia = out.inundation_analysis(threshold=args.inundation_threshold,
+                                     threshold_datum=args.inundation_analysis)
+        print('\nINUNDATIONS OVER ' + str(args.inundation_threshold) + ' ' + args.Units + ' ABOVE ' + args.inundation_analysis + ':')
+        print(ia.inundations)        
+        
     # Save files when run as a script #
     if args.outfile_save_dir != 'None':
         out_dir = os.path.join(args.outfile_save_dir, 'outfiles_' + datetime.now().strftime("%Y-%m-%d-%H%M%S"))
         os.mkdir(out_dir)
         with open(os.path.join(out_dir,'tadc.out'),'w') as f:
             f.write(out.readme)
+        out.data.to_csv(os.path.join(out_dir,'Resampled_Data.csv'),index=False)
         out.high_lows.to_csv(os.path.join(out_dir,'High_Lows.csv'),index=False)
+        shutil.copy(args.fname,os.path.join(out_dir,os.path.basename(args.fname)))
         if args.make_plots:
             for i in range(len(out.plots)):
                 out.plots.iloc[i]['plot'].savefig(os.path.join(out_dir,out.plots.iloc[i]['time']+'.png'),dpi=300)
-    
-        
+        if args.daily_max_analysis != 'None':
+            dma.daily_maxs.to_csv(os.path.join(out_dir,'Daily_Max_Water_Levels.csv'),index=False)
+            dma_plot = dma.plot()
+            dma_plot.savefig(os.path.join(out_dir,'Daily_Maximum_Water_Levels.png'),dpi=350)                        
+        if args.daily_min_analysis != 'None':
+            dmi.daily_mins.to_csv(os.path.join(out_dir,'Daily_Min_Water_Levels.csv'),index=False)
+            dmi_plot = dmi.plot()
+            dmi_plot.savefig(os.path.join(out_dir,'Daily_Minimum_Water_Levels.png'),dpi=350)            
+        if args.inundation_analysis != None and args.inundation_threshold is not None:
+            ia.inundations.to_csv(os.path.join(out_dir,'Inundation_Analysis.csv'),index=False)
+            ia_plots = ia.plot()
+            ia_plots[0].savefig(os.path.join(out_dir,'Inundation_History.png'),dpi=350)
+            ia_plots[1].savefig(os.path.join(out_dir,'Maximum_Elevation_vs_Duration.png'),dpi=350)
+            ia_plots[2].savefig(os.path.join(out_dir,'Frequency_of_Elevations.png'),dpi=350)
+            ia_plots[3].savefig(os.path.join(out_dir,'Frequency_of_Durations.png'),dpi=350)
+
 
               
 
