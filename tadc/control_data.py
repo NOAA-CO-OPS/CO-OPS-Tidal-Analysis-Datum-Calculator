@@ -28,7 +28,7 @@ def Get_Monthly_Means(Control_Station_ID, Begin_Month, Begin_Year, End_Month, En
     r = requests.get(url1 + url2 + url3)
     MM = pd.DataFrame(r.json()['data'])
     for c in ['highest','MHHW','MHW','MSL','MLW','MLLW','lowest']:
-        MM[c]  = MM[c].astype(float) * Conversion
+        MM[c]  = MM[c].replace('','nan').astype(float) * Conversion
     MM_lists = [MM[['highest','MHHW','MHW','MSL','MLW','MLLW','lowest']].iloc[i].values.tolist() for i in range(len(MM))]  # Convert to the list of lists format needed by run.py #
     return MM_lists
 
@@ -91,30 +91,32 @@ def Get_Accepted_Datums(Station_ID, epoch_start_year, gmt_offset, Conversion):
     else:
         if epoch_start_year == 2002:
             logger.warning(('WARNING: You have requested to compute datums for your data relative to the 2002-2020 National Tidal Datum Epoch, ' +
-                            'which has not yet been released by NOAA. Preliminary, unofficial datums at the selected control station will be computed ' +
+                            'which has not yet been released by NOAA. Preliminary, unofficial datums at the selected control station have been computed ' +
                             'and used to adjust your data. These control datums may be different from those that are planned to be officially released ' +
                             'in early 2029 and should be used for planning purposes only. The chosen control station should have similar tidal characteristics ' +
                             'to the subordinate station. More details on choosing a suitable control station can be found here: ' +
-                            'https://access.co-ops.nos.noaa.gov/datumcalc/docs/FAQs.pdf. Please allow up to 60 seconds ' +
-                            'for the computation to complete.'))
+                            'https://access.co-ops.nos.noaa.gov/datumcalc/docs/FAQs.pdf.'))
         else:
             logger.warning(('WARNING: You have requested to compute datums for your data relative to a custom 19 yr Datum Epoch. Preliminary, unofficial datums ' +
                             'at the selected control station will be computed and used to adjust your data. These control datums should be used for planning purposes only. ' +
                             'The chosen control station should have similar tidal characteristics to the subordinate station. More details on choosing a suitable control ' +
-                            'station can be found here: https://access.co-ops.nos.noaa.gov/datumcalc/docs/FAQs.pdf. Please allow up to 60 seconds for the computation to complete.'))            
-        hl = Get_High_Lows(Station_ID,
-                           datetime(epoch_start_year,1,1),
-                           datetime(epoch_start_year+18,12,31),
-                           gmt_offset,
-                           Conversion)
-        HL = pd.DataFrame(hl,columns=['time','val','type'])
-        is_missing_less_than_3_yr = check_hl_missing_data(HL, epoch_start_year)
-        if is_missing_less_than_3_yr:
-            MHHW = HL.loc[HL['type']=='HH','val'].mean()
-            MHW = HL.loc[HL['type']=='H','val'].mean()
-            MLW = HL.loc[HL['type']=='L','val'].mean()
-            MLLW = HL.loc[HL['type']=='LL','val'].mean()
-            MSL = HL['val'].mean()
+                            'station can be found here: https://access.co-ops.nos.noaa.gov/datumcalc/docs/FAQs.pdf.'))            
+        mm = Get_Monthly_Means(Station_ID,
+                               1,
+                               epoch_start_year,
+                               12,
+                               epoch_start_year + 18,
+                               Conversion)
+        MM = pd.DataFrame(mm,columns=['highest','MHHW','MHW','MSL','MLW','MLLW','lowest'])
+        if len(MM) >= 120: # If at least 10 years of data, do the calculation
+            if len(MM) < 192: # But if less than 16 years of data, throw a warning #
+                logger.warning(('WARNING: Control station is missing more than 3 yr of data for the selected 19 year epoch. ' +
+                                'Control datums may be unreliable. Consider choosing a different control station.'))
+            MHHW = MM['MHHW'].mean()
+            MHW = MM['MHW'].mean()
+            MSL = MM['MSL'].mean()
+            MLW = MM['MLW'].mean()
+            MLLW = MM['MLLW'].mean()
             MTL = 0.5 * (MHW + MLW)
             DTL = 0.5 * (MHHW + MLLW)
             GT = MHHW - MLLW
@@ -126,10 +128,11 @@ def Get_Accepted_Datums(Station_ID, epoch_start_year, gmt_offset, Conversion):
             HWI = np.nan
             SD = [MHHW*Conversion,MHW*Conversion,DTL*Conversion,MTL*Conversion,MSL*Conversion,
                   MLW*Conversion,MLLW*Conversion,GT*Conversion,MN*Conversion,DHQ*Conversion,
-                  DLQ*Conversion,NAVD88*Conversion,LWI,HWI]
+                  DLQ*Conversion,NAVD88*Conversion,LWI,HWI]              
         else:
-            raise RuntimeError('Control station is missing more than 3 yr of data for the selected 19 year epoch. Please select a different control station')
+            raise RuntimeError('Control station is missing more than 9 yr of data for the selected 19 year epoch. Please select a different control station.')
     return SD
+
 
 
 def Get_SubMethod(Station_ID):
@@ -142,22 +145,3 @@ def Get_SubMethod(Station_ID):
         return('Standard')
     else:
         return('Modified')
-
-
-def check_hl_missing_data(HL, epoch_start_year):
-    HL = HL[~np.isnan(HL['val'])].reset_index(drop=True)
-    if len(HL)>0:
-        time_full = pd.date_range(datetime(epoch_start_year,1,1),
-                                  datetime(epoch_start_year+18,12,31),
-                                  freq=HL['time'].diff().mean())
-        allowed_missing = int(np.ceil(pd.Timedelta(days=3 *365.25) / HL['time'].diff().mean()))
-        min_allowed_length = len(time_full) - allowed_missing
-        if len(HL) > min_allowed_length:
-            return True
-        else:
-            return False
-    else:
-        return False
-    
-
-
