@@ -14,22 +14,31 @@ from . import tides as tf
 def Get_Monthly_Means(Control_Station_ID, Begin_Month, Begin_Year, End_Month, End_Year, Conversion):
     #This function retrieves the control station's monthly means using CO-OPS data api 
     end_days = tf.Last_Day_In_Month(int(End_Year),int(End_Month))
-    if int(Begin_Month) < 10:
-        sb = '0'
-    else:
-        sb = ''
-    if int(End_Month) < 10:
-        se = '0'
-    else:
-        se = ''    
-    url1 = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?'
-    url2 = 'begin_date=' + str(Begin_Year) + sb + str(Begin_Month) + '01' + '&end_date=' + str(End_Year) + se + str(End_Month) + str(end_days) + '&station=' + str(Control_Station_ID)
-    url3 = '&product=monthly_mean&datum=stnd&units=metric&time_zone=gmt&application=TADC&format=json'
-    r = requests.get(url1 + url2 + url3)
+    begin_m_str = f"{int(Begin_Month):02d}"
+    end_m_str = f"{int(End_Month):02d}"
+    end_d_str = f"{int(end_days):02d}"
+
+    begin_date = f"{Begin_Year}{begin_m_str}01"
+    end_date = f"{End_Year}{end_m_str}{end_d_str}"
+
+    url = ("https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?"
+        f"begin_date={begin_date}&end_date={end_date}&station={Control_Station_ID}"
+        "&product=monthly_mean&datum=STND&units=metric&time_zone=gmt&application=TADC&format=json")
+    r = requests.get(url)
+    r.raise_for_status()
+    res_json = r.json()
+
+    if 'data' not in res_json:
+        raise RuntimeError('Control station monthly means data are not available. Please select a different control station.')
+    
     MM = pd.DataFrame(r.json()['data'])
-    for c in ['highest','MHHW','MHW','MSL','MLW','MLLW','lowest']:
-        MM[c]  = MM[c].replace('','nan').astype(float) * Conversion
-    MM_lists = [MM[['highest','MHHW','MHW','MSL','MLW','MLLW','lowest']].iloc[i].values.tolist() for i in range(len(MM))]  # Convert to the list of lists format needed by run.py #
+    datum_cols = ['highest', 'MHHW', 'MHW', 'MSL', 'MLW', 'MLLW', 'lowest']
+    for c in datum_cols:
+        if c in MM.columns:
+            MM[c] = pd.to_numeric(MM[c], errors='coerce') * Conversion
+        else:
+            MM[c] = np.nan
+    MM_lists = [MM[datum_cols].iloc[i].values.tolist() for i in range(len(MM))]
     return MM_lists
 
 
@@ -126,9 +135,9 @@ def Get_Accepted_Datums(Station_ID, epoch_start_year, gmt_offset, Conversion):
             NAVD88 = np.nan
             LWI = np.nan
             HWI = np.nan
-            SD = [MHHW*Conversion,MHW*Conversion,DTL*Conversion,MTL*Conversion,MSL*Conversion,
-                  MLW*Conversion,MLLW*Conversion,GT*Conversion,MN*Conversion,DHQ*Conversion,
-                  DLQ*Conversion,NAVD88*Conversion,LWI,HWI]              
+            SD = [MHHW,MHW,DTL,MTL,MSL,
+                  MLW,MLLW,GT,MN,DHQ,
+                  DLQ,NAVD88,LWI,HWI]              
         else:
             raise RuntimeError('Control station is missing more than 9 yr of data for the selected 19 year epoch. Please select a different control station.')
     return SD
