@@ -81,6 +81,7 @@ def Get_High_Lows(Control_Station_ID, Start_DT, End_DT, gmt_offset, Conversion):
 
 
 def Get_Accepted_Datums(Station_ID, epoch_start_year, gmt_offset, Conversion):
+    five_yr_modified_stns = [9455760,9454240,9452210,9452400,9457292,9455500,9453220,8761724]
     #This function retrieves the accepted control station datums using CO-OPS metadata api
     if epoch_start_year == 1983:
         url = 'https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/' + str(Station_ID) + '/datums.json?units=metric'
@@ -117,8 +118,8 @@ def Get_Accepted_Datums(Station_ID, epoch_start_year, gmt_offset, Conversion):
                                epoch_start_year + 18,
                                Conversion)
         MM = pd.DataFrame(mm,columns=['highest','MHHW','MHW','MSL','MLW','MLLW','lowest'])
-        if len(MM) >= 120: # If at least 10 years of data, do the calculation
-            if len(MM) < 192: # But if less than 16 years of data, throw a warning #
+        if len(MM) >= 120 and int(Station_ID) not in five_yr_modified_stns:
+            if len(MM) < 192: # If less than 16 years of data, throw a warning #
                 logger.warning(('WARNING: Control station is missing more than 3 yr of data for the selected 19 year epoch. ' +
                                 'Control datums may be unreliable. Consider choosing a different control station.'))
             MHHW = MM['MHHW'].mean()
@@ -154,3 +155,12 @@ def Get_SubMethod(Station_ID):
         return('Standard')
     else:
         return('Modified')
+
+
+def Get_Station_Name(Station_ID):
+    url = 'https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/' + str(Station_ID) + '.json?units=english'
+    r = requests.get(url)
+    return r.json()['stations'][0]['name'] + ', ' + r.json()['stations'][0]['state']
+
+
+

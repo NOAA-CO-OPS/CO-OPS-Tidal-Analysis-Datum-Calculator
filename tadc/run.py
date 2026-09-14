@@ -201,8 +201,10 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
 
     if Control_Station_ID == None or len(str(Control_Station_ID)) < 7:
         Method_Option = 'FRED'
+        control_name = ''
     else:
         Control_Station_ID = str(Control_Station_ID)
+        control_name = cd.Get_Station_Name(Control_Station_ID)
 
     #when the script fails to execute as a result of incorrect parameter submission, reason will be indicated in GUI as well as the logfile 
     if fname == '':
@@ -649,9 +651,9 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
             OutFile = SDC_Print(['***Error*** Problem retrieving Accepted Datums for station ', Control_Station_ID], OutFile)
             raise RuntimeError('Problem retrieving Accepted Datums for station ' + str(Control_Station_ID))
         if epoch_start_year == 1983:
-            OutFile = SDC_Print(['Control Datums for: ' , Control_Station_ID], OutFile)
+            OutFile = SDC_Print(['Control Datums for: ' , control_name, '(', Control_Station_ID , ')'], OutFile)
         else:
-            OutFile = SDC_Print(['PRELIMINARY, UNOFFICIAL Control Datums for ' , Control_Station_ID, ' over ',epoch_start_year,'-',epoch_start_year+18,':'], OutFile)
+            OutFile = SDC_Print(['PRELIMINARY, UNOFFICIAL Control Datums for ' , control_name , '(', Control_Station_ID, ')' , ' over ',epoch_start_year,'-',epoch_start_year+18,':'], OutFile)
         OutFile = SDC_Print(['\nMHHW,  MHW,  DTL,  MTL,  MSL,  MLW,  MLLW'], OutFile)
         MeanString = ''
         for di in range(0,7):
@@ -802,9 +804,9 @@ def run(*, fname=None, data=None, resample_minutes=None, Pick_Method='PolyFit', 
         #Get Means for Control Station
         MM_Control = cd.Get_Monthly_Means(Control_Station_ID, start_month, start_year, end_month, end_year, CFactor)
         if len(MM_Control) == 0:
-            OutFile = SDC_Print(['***Error*** No Monthly Means Returned for Control station: ', Control_Station_ID], OutFile)
+            OutFile = SDC_Print(['***Error*** No Monthly Means Returned for Control station: ' , control_name, '(' , Control_Station_ID , ')'], OutFile)
             OutFile = SDC_Print(['Can not continue.'], OutFile)
-            raise RuntimeError('No Monthly Means Returned for Control station: ' + str(Control_Station_ID) + '. Can not continue.')
+            raise RuntimeError('No Monthly Means Returned for Control station: ' + control_name + ' (' + str(Control_Station_ID) + '). Can not continue.')
         OutFile = SDC_Print(['CONTROL MONTHLY MEANS:'], OutFile)       
         yrmo_strs = pd.date_range(datetime(start_year,start_month,1),datetime(end_year,end_month,1),freq='MS').strftime('%#m / %Y')
         for i in range(len(MM_Control)):
